@@ -1,3 +1,4 @@
+// app/src/components/Domains.jsx
 import React from "react";
 
 const domains = [
@@ -14,7 +15,7 @@ export default function Domains() {
         style={{
           maxWidth: "1100px",
           margin: "0 auto",
-          padding: "3rem 1.5rem 4rem",
+          padding: "3.2rem 1.5rem 4rem",
         }}
       >
         <h2
@@ -31,10 +32,10 @@ export default function Domains() {
           style={{
             textAlign: "center",
             color: "#6b7280",
-            marginBottom: "2rem",
+            marginBottom: "2.1rem",
           }}
         >
-          אנו מטפלים במגוון רחב של סוגיות בדיני עבודה.
+          התמחות מלאה בדיני עבודה – מהשכר הראשון ועד לסיום יחסי העבודה.
         </p>
 
         <div
@@ -42,6 +43,7 @@ export default function Domains() {
             display: "grid",
             gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
             gap: "1.3rem",
+            direction: "rtl",
           }}
         >
           {domains.map((name) => (
@@ -50,28 +52,30 @@ export default function Domains() {
               style={{
                 background: "white",
                 borderRadius: "1rem",
-                padding: "1.2rem 1.4rem",
+                padding: "1.25rem 1.4rem",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
                 boxShadow: "0 8px 20px rgba(15, 23, 42, 0.04)",
+                border: "1px solid #e5e7eb",
               }}
             >
-              <span style={{ color: "#16a34a", fontSize: "1.2rem" }}>✔</span>
+              <span style={{ color: "#22c55e", fontSize: "1.3rem" }}>✔</span>
               <span
                 style={{
                   flex: 1,
-                  marginRight: "0.7rem",
-                  fontSize: "1rem",
+                  marginRight: "0.8rem",
+                  fontSize: "1.02rem",
                   fontWeight: 500,
+                  color: "#111827",
                 }}
               >
                 {name}
               </span>
               <div
                 style={{
-                  width: "38px",
-                  height: "38px",
+                  width: "40px",
+                  height: "40px",
                   borderRadius: "999px",
                   background: "#2563eb",
                   display: "flex",
@@ -81,7 +85,7 @@ export default function Domains() {
                   fontSize: "1.1rem",
                 }}
               >
-                ⏱
+                ⚖️
               </div>
             </div>
           ))}

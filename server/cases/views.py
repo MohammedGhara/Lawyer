@@ -5,6 +5,8 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from django.utils.dateparse import parse_datetime
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions
+from rest_framework.decorators import api_view
+
 from .models import Case, CaseDocument, Appointment
 from .serializers import (
     CaseSerializer,
@@ -16,12 +18,77 @@ from .serializers import (
 # 🔵 תיקים
 # -------------------------------------------------------
 
+from django.shortcuts import get_object_or_404
+from rest_framework import permissions
+LAWYER_PASSWORD = "1234"   # 👈 you can change here in the future
 
+@api_view(["POST"])
+def lawyer_login(request):
+    password = (request.data.get("password") or "").strip()
+
+    if password == LAWYER_PASSWORD:
+        return Response({"ok": True})
+
+    return Response({"ok": False, "detail": "wrong password"}, status=400)
+class CaseStatusUpdateAPIView(APIView):
+    """
+    PATCH /api/cases/<case_id>/status/
+    עורך הדין משנה סטטוס תיק: new / in_review / closed
+    payload: {"status": "in_review"}
+    """
+
+    permission_classes = [permissions.AllowAny]  # אפשר להקשיח בהמשך
+
+    def patch(self, request, case_id):
+        case = get_object_or_404(Case, pk=case_id)
+        new_status = (request.data.get("status") or "").strip()
+
+        valid_statuses = dict(Case.STATUS_CHOICES).keys()
+        if new_status not in valid_statuses:
+            return Response(
+                {"detail": f"סטטוס לא חוקי. הערכים האפשריים: {', '.join(valid_statuses)}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        case.status = new_status
+        case.save(update_fields=["status"])
+
+        return Response(CaseSerializer(case).data, status=status.HTTP_200_OK)
+        
 class CaseCreateAPIView(generics.CreateAPIView):
     """ יצירת תיק חדש מהטופס הראשוני """
     queryset = Case.objects.all()
     serializer_class = CaseSerializer
+    
+class CaseStatusUpdateAPIView(APIView):
+    """
+    PATCH /api/cases/<pk>/status/
+    גוף הבקשה: {"status": "new" | "in_review" | "closed"}
+    """
 
+    def patch(self, request, pk):
+        # למצוא את התיק
+        try:
+            case = Case.objects.get(pk=pk)
+        except Case.DoesNotExist:
+            return Response({"detail": "Case not found"}, status=404)
+
+        # לקרוא את הסטטוס החדש מה־JSON
+        new_status = (request.data.get("status") or "").strip()
+
+        # לוודא שהסטטוס חוקי לפי המודל
+        valid_statuses = {code for code, _ in Case.STATUS_CHOICES}
+        if new_status not in valid_statuses:
+            return Response(
+                {"detail": "Invalid status value"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # לשמור ולעדכן
+        case.status = new_status
+        case.save()
+
+        return Response(CaseSerializer(case).data, status=status.HTTP_200_OK)
 
 class CaseListAPIView(generics.ListAPIView):
     """ רשימת התיקים – לדשבורד עו״ד """

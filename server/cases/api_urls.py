@@ -12,6 +12,9 @@ from .views import (
     AppointmentApproveAPIView,
     AppointmentRejectAPIView,
     AppointmentSuggestAPIView,
+    CaseStatusUpdateAPIView,
+    lawyer_login,
+    
 )
 
 urlpatterns = [
@@ -22,8 +25,11 @@ urlpatterns = [
     path('cases/<int:case_id>/chat/', CaseChatSummaryAPIView.as_view(), name='case-chat-summary'),
     path('cases/<int:case_id>/documents/', CaseDocumentUploadAPIView.as_view(), name='case-documents-upload'),
 
+    path('cases/<int:pk>/status/', CaseStatusUpdateAPIView.as_view(), name='case-status-update'),
+
     # פגישות לפי תיק (צד עובד)
     path('cases/<int:case_id>/appointments/', CaseAppointmentsAPIView.as_view(), name='case-appointments'),
+    path("lawyer/login/", lawyer_login),
 
     # ----- פגישות (צד עו״ד) -----
     path('appointments/', AppointmentCreateAPIView.as_view(), name='appointment-create'),

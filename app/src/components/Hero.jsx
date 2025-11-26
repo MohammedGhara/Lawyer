@@ -1,115 +1,314 @@
+// app/src/components/Hero.jsx
 import React from "react";
 
 export default function Hero({ onStart }) {
   return (
     <section
       style={{
-        minHeight: "80vh",
         background:
-          "linear-gradient(135deg, #1d4ed8 0%, #1e40af 45%, #020617 100%)",
+          "radial-gradient(circle at top left, #1d4ed8 0, #111827 45%, #020617 100%)",
         color: "white",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        paddingTop: "4.5rem",
       }}
     >
       <div
         style={{
           maxWidth: "1100px",
           margin: "0 auto",
-          padding: "3rem 1.5rem",
-          display: "grid",
-          gridTemplateColumns: "minmax(0, 1.1fr) minmax(0, 0.9fr)",
+          padding: "4.5rem 1.5rem 4rem",
+          display: "flex",
+          flexWrap: "wrap-reverse",
           gap: "2.5rem",
           alignItems: "center",
+          direction: "rtl",
         }}
       >
-        <div>
+        {/* ---------- RIGHT: TEXT BLOCK ---------- */}
+        <div style={{ flex: "1 1 320px" }}>
           <div
             style={{
               display: "inline-flex",
               alignItems: "center",
-              gap: "0.5rem",
-              background: "rgba(15, 23, 42, 0.6)",
+              gap: "0.4rem",
+              padding: "0.25rem 0.7rem",
               borderRadius: "999px",
-              padding: "0.35rem 0.9rem",
-              fontSize: "0.9rem",
-              marginBottom: "1.2rem",
+              background: "rgba(15, 23, 42, 0.7)",
+              marginBottom: "1rem",
+              fontSize: "0.8rem",
             }}
           >
-            <span>⚖️</span>
-            <span>מערכת חכמה לדיני עבודה</span>
+            <span
+              style={{
+                width: "18px",
+                height: "18px",
+                borderRadius: "999px",
+                background: "#22c55e",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "0.9rem",
+              }}
+            >
+              ✔
+            </span>
+            <span>עוזר חכם לדיני עבודה – 24/7</span>
           </div>
 
           <h1
             style={{
-              fontSize: "3rem",
-              lineHeight: 1.1,
+              fontSize: "2.4rem",
+              lineHeight: 1.2,
               fontWeight: 800,
               marginBottom: "0.75rem",
             }}
           >
-            הזכויות שלכם בעבודה
+            מקבלים החלטות חכמות
             <br />
-            <span style={{ color: "#bfdbfe" }}>מגיעות לכם</span>
+            לפני שמחליטים לתבוע.
           </h1>
 
           <p
             style={{
-              fontSize: "1.05rem",
-              maxWidth: "32rem",
-              color: "#e2e8f0",
+              fontSize: "1.02rem",
+              color: "#e5e7eb",
+              maxWidth: "540px",
               marginBottom: "1.8rem",
             }}
           >
-            מערכת חכמה שמסייעת לכם לאסוף את כל המידע הנדרש לתביעת דיני עבודה,
-            ומחברת אתכם עם עורך דין מומחה בתחום.
+            &quot;משפט חכם&quot; מנתח את המקרה שלכם, מסביר את הזכויות בשפה
+            פשוטה ומכין עבור עורך הדין תקציר ברור – כדי שתגיעו לפגישה הרבה יותר
+            מוכנים.
           </p>
 
-          <button
-            onClick={onStart}
+          {/* CTA buttons */}
+          <div
             style={{
-              background: "#f97316",
-              borderRadius: "999px",
-              border: "none",
-              padding: "0.9rem 2.4rem",
-              fontSize: "1.05rem",
-              fontWeight: 600,
-              color: "white",
-              boxShadow: "0 18px 40px rgba(15, 23, 42, 0.45)",
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "0.8rem",
+              marginBottom: "1.6rem",
             }}
           >
-            התחלת פנייה חדשה
-          </button>
+            <button
+              type="button"
+              onClick={onStart}
+              style={{
+                padding: "0.9rem 1.8rem",
+                borderRadius: "999px",
+                border: "none",
+                background: "#3b82f6",
+                color: "white",
+                fontWeight: 600,
+                fontSize: "1rem",
+                cursor: "pointer",
+                boxShadow: "0 18px 40px rgba(37, 99, 235, 0.55)",
+              }}
+            >
+              התחלת בדיקת זכויות
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                const el = document.getElementById("how-it-works");
+                if (el) el.scrollIntoView({ behavior: "smooth" });
+              }}
+              style={{
+                padding: "0.85rem 1.6rem",
+                borderRadius: "999px",
+                border: "1px solid rgba(148, 163, 184, 0.7)",
+                background: "transparent",
+                color: "#e5e7eb",
+                fontWeight: 500,
+                fontSize: "0.96rem",
+                cursor: "pointer",
+              }}
+            >
+              איך זה עובד?
+            </button>
+          </div>
+
+          {/* Trust strip */}
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "1.2rem",
+              fontSize: "0.9rem",
+              color: "#9ca3af",
+            }}
+          >
+            <div>
+              <span style={{ color: "#22c55e", marginLeft: "0.3rem" }}>●</span>
+              מידע מאובטח ולא מועבר למעסיק
+            </div>
+            <div>
+              <span style={{ color: "#22c55e", marginLeft: "0.3rem" }}>●</span>
+              מותאם לדיני עבודה בישראל
+            </div>
+          </div>
         </div>
 
-        {/* תמונה צדדית – כרגע קופסת צבע במקום תמונה אמיתית */}
+        {/* ---------- LEFT: ILLUSTRATION / CARD ---------- */}
         <div
           style={{
-            borderRadius: "1.5rem",
-            background:
-              "linear-gradient(145deg, rgba(15, 23, 42, 0.9), rgba(30, 64, 175, 0.9))",
-            border: "1px solid rgba(191, 219, 254, 0.3)",
-            padding: "1.5rem",
-            color: "#e5e7eb",
+            flex: "1 1 300px",
+            display: "flex",
+            justifyContent: "center",
           }}
         >
-          <h3
+          <div
             style={{
-              fontSize: "1.2rem",
-              fontWeight: 600,
-              marginBottom: "0.75rem",
+              width: "100%",
+              maxWidth: "380px",
+              borderRadius: "1.5rem",
+              padding: "1.4rem 1.2rem",
+              background:
+                "linear-gradient(145deg, rgba(15,23,42,0.95), rgba(30,64,175,0.9))",
+              boxShadow: "0 24px 60px rgba(15, 23, 42, 0.75)",
             }}
           >
-            מה מקבלים במערכת?
-          </h3>
-          <ul style={{ listStyle: "none", paddingRight: 0, fontSize: "0.95rem" }}>
-            <li>• איסוף אוטומטי של נתוני התיק</li>
-            <li>• העלאת מסמכים רלוונטיים (תלושים, חוזה, מכתב פיטורים)</li>
-            <li>• שיחה עם צ׳אטבוט ייעודי לדיני עבודה</li>
-            <li>• קביעת פגישה מסודרת עם עורך הדין</li>
-          </ul>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "1rem",
+              }}
+            >
+              <div style={{ display: "flex", gap: "0.4rem", direction: "ltr" }}>
+                <span
+                  style={{
+                    width: "8px",
+                    height: "8px",
+                    borderRadius: "999px",
+                    background: "#f97373",
+                  }}
+                />
+                <span
+                  style={{
+                    width: "8px",
+                    height: "8px",
+                    borderRadius: "999px",
+                    background: "#facc15",
+                  }}
+                />
+                <span
+                  style={{
+                    width: "8px",
+                    height: "8px",
+                    borderRadius: "999px",
+                    background: "#22c55e",
+                  }}
+                />
+              </div>
+              <span style={{ fontSize: "0.8rem", color: "#9ca3af" }}>
+                צ׳אט עוזר חכם
+              </span>
+            </div>
+
+            <div
+              style={{
+                background: "rgba(15,23,42,0.92)",
+                borderRadius: "1rem",
+                padding: "0.9rem 0.9rem 0.8rem",
+                marginBottom: "1rem",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  marginBottom: "0.7rem",
+                }}
+              >
+                <div
+                  style={{
+                    maxWidth: "82%",
+                    background:
+                      "linear-gradient(135deg, #2563eb, #38bdf8)",
+                    padding: "0.6rem 0.75rem",
+                    borderRadius: "1rem 1rem 0.2rem 1rem",
+                    fontSize: "0.85rem",
+                  }}
+                >
+                  פיטרו אותי בלי שימוע, ואני לא בטוח/ה אם מגיע לי פיצוי.
+                </div>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-start",
+                }}
+              >
+                <div
+                  style={{
+                    maxWidth: "88%",
+                    background: "rgba(15, 23, 42, 0.9)",
+                    border: "1px solid rgba(148, 163, 184, 0.6)",
+                    padding: "0.6rem 0.75rem",
+                    borderRadius: "1rem 1rem 1rem 0.2rem",
+                    fontSize: "0.83rem",
+                    color: "#e5e7eb",
+                  }}
+                >
+                  נראה שיש לך עילה לבדיקה. אסכם את הפרטים עבור עורך הדין,
+                  נבדוק פיצויי פיטורים, הודעה מוקדמת וזכויות נוספות.
+                </div>
+              </div>
+            </div>
+
+            {/* Stats bar */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(3, minmax(0,1fr))",
+                gap: "0.7rem",
+                fontSize: "0.8rem",
+              }}
+            >
+              <div
+                style={{
+                  padding: "0.6rem 0.7rem",
+                  borderRadius: "0.9rem",
+                  background: "rgba(15, 23, 42, 0.85)",
+                  border: "1px solid rgba(55, 65, 81, 0.9)",
+                }}
+              >
+                <div style={{ color: "#9ca3af", marginBottom: "0.15rem" }}>
+                  זמן מילוי
+                </div>
+                <div style={{ fontWeight: 700 }}>~ 5 דקות</div>
+              </div>
+              <div
+                style={{
+                  padding: "0.6rem 0.7rem",
+                  borderRadius: "0.9rem",
+                  background: "rgba(15, 23, 42, 0.85)",
+                  border: "1px solid rgba(55, 65, 81, 0.9)",
+                }}
+              >
+                <div style={{ color: "#9ca3af", marginBottom: "0.15rem" }}>
+                  מסמכים
+                </div>
+                <div style={{ fontWeight: 700 }}>חוזה, תלושים</div>
+              </div>
+              <div
+                style={{
+                  padding: "0.6rem 0.7rem",
+                  borderRadius: "0.9rem",
+                  background: "rgba(15, 23, 42, 0.85)",
+                  border: "1px solid rgba(55, 65, 81, 0.9)",
+                }}
+              >
+                <div style={{ color: "#9ca3af", marginBottom: "0.15rem" }}>
+                  סטטוס תיק
+                </div>
+                <div style={{ fontWeight: 700, color: "#22c55e" }}>
+                  מוכן לסקירה
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>

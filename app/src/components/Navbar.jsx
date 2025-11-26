@@ -1,71 +1,130 @@
+// app/src/components/Navbar.jsx
 import React from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function Navbar() {
+  const navigate = useNavigate();
+  const isLawyer = localStorage.getItem("smartlaw_role") === "lawyer";
+
+  function handleLogout() {
+    localStorage.removeItem("smartlaw_role");
+    navigate("/");
+  }
+
   return (
-    <header
+    <nav
       style={{
         width: "100%",
-        background: "rgba(15, 23, 42, 0.9)",
-        backdropFilter: "blur(12px)",
+        background: "#1e293b", // dark navy
         color: "white",
-        position: "fixed",
-        top: 0,
-        right: 0,
-        left: 0,
-        zIndex: 50,
+        padding: "0.75rem 2rem",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        direction: "rtl",
       }}
     >
-      <div
+      {/* ---------- RIGHT SIDE: LOGO + WEBSITE NAME ---------- */}
+      <Link
+        to="/"
         style={{
-          maxWidth: "1100px",
-          margin: "0 auto",
-          padding: "0.75rem 1.5rem",
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
+          gap: "0.6rem",
+          textDecoration: "none",
+          color: "white",
         }}
       >
-        {/* לוגו + שם המערכת */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <div
-            style={{
-              width: "38px",
-              height: "38px",
-              borderRadius: "999px",
-              background: "#2563eb",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "1.2rem",
-            }}
-          >
-            ⚖️
-          </div>
-          <span style={{ fontWeight: 700, fontSize: "1.1rem" }}>משפט חכם</span>
-        </div>
-
-        {/* כפתור התחברות */}
-        <button
+        {/* LOGO CIRCLE */}
+        <div
           style={{
+            width: "36px",
+            height: "36px",
+            background: "#3b82f6",
+            borderRadius: "50%",
             display: "flex",
+            justifyContent: "center",
             alignItems: "center",
-            gap: "0.5rem",
-            background: "transparent",
-            borderRadius: "999px",
-            border: "1px solid rgba(148, 163, 184, 0.5)",
-            padding: "0.4rem 0.9rem",
-            color: "white",
-            fontSize: "0.9rem",
+            fontSize: "1.2rem",
           }}
         >
-          <span>התחברות</span>
-          
-          <span style={{ fontSize: "1rem" }}>↪</span>
-        </button>
-        <a href="/lawyer" style={{ fontWeight: 600 }}>
-          דשבורד עורך הדין
-        </a>
+          ⚖️
+        </div>
+
+        {/* WEBSITE NAME */}
+        <span style={{ fontSize: "1.25rem", fontWeight: 700 }}>
+          משפט חכם
+        </span>
+      </Link>
+
+      {/* ---------- LEFT SIDE: NAV LINKS ---------- */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "1.5rem",
+        }}
+      >
+        {/* Home always visible */}
+        <Link
+          to="/"
+          style={{
+            textDecoration: "none",
+            color: "white",
+            fontSize: "1rem",
+            fontWeight: 500,
+          }}
+        >
+          דף הבית
+        </Link>
+
+        {/* Lawyer-specific items */}
+        {!isLawyer && (
+          <Link
+            to="/lawyer-login"
+            style={{
+              textDecoration: "none",
+              color: "white",
+              fontSize: "1rem",
+              fontWeight: 500,
+            }}
+          >
+            כניסת עו״ד
+          </Link>
+        )}
+
+        {isLawyer && (
+          <>
+            <Link
+              to="/lawyer"
+              style={{
+                textDecoration: "none",
+                color: "white",
+                fontSize: "1rem",
+                fontWeight: 500,
+              }}
+            >
+              דשבורד עו״ד
+            </Link>
+
+            <button
+              onClick={handleLogout}
+              style={{
+                padding: "0.4rem 1rem",
+                background: "#ef4444",
+                border: "none",
+                borderRadius: "0.5rem",
+                color: "white",
+                fontWeight: 600,
+                cursor: "pointer",
+                fontSize: "0.95rem",
+              }}
+            >
+              התנתקות
+            </button>
+          </>
+        )}
       </div>
-    </header>
+    </nav>
   );
 }

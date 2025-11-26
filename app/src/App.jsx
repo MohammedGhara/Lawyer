@@ -6,7 +6,8 @@ import IntakeForm from "./pages/IntakeForm.jsx"; // חדש
 import Chatbot from "./pages/Chatbot.jsx";
 import LawyerDashboard from "./pages/LawyerDashboard.jsx";
 import AppointmentPicker from "./pages/AppointmentPicker.jsx";
-
+import LawyerLogin from "./pages/LawyerLogin.jsx";
+import RequireLawyer from "./components/RequireLawyer.jsx";
 export default function App() {
   const navigate = useNavigate();
 
@@ -21,9 +22,16 @@ export default function App() {
         <Route path="/" element={<Home onStartIntake={handleStartIntake} />} />
         <Route path="/intake" element={<IntakeForm />} /> {/* חדש */}
         <Route path="/chat/:caseId" element={<Chatbot />} />   {}
-        <Route path="/lawyer" element={<LawyerDashboard />} /> {}
+          <Route
+          path="/lawyer"
+          element={
+            <RequireLawyer>
+              <LawyerDashboard />
+            </RequireLawyer>
+          }
+            />
           <Route path="/cases/:caseId/appointment" element={<AppointmentPicker />} />
-
+        <Route path="/lawyer-login" element={<LawyerLogin />} />
       </Routes>
     </div>
   );

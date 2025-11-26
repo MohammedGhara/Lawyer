@@ -10,6 +10,11 @@ export default function LawyerDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // 🔵 סינון + מיון
+  const [filterClaim, setFilterClaim] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [sortOrder, setSortOrder] = useState("newest");
+
   useEffect(() => {
     loadAllData();
   }, []);
@@ -41,6 +46,27 @@ export default function LawyerDashboard() {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  }
+
+  // ---------- עדכון סטטוס תיק (עורך דין) ----------
+  async function updateCaseStatus(caseId, newStatus) {
+    try {
+      const res = await fetch(`${API_BASE}/cases/${caseId}/status/`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.detail || "שגיאה בעדכון סטטוס התיק");
+      }
+
+      await loadAllData();
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "שגיאה בעדכון סטטוס התיק");
     }
   }
 
@@ -127,6 +153,23 @@ export default function LawyerDashboard() {
     });
   }
 
+  // ---------- סינון + מיון תיקים לתצוגה ----------
+  const filteredCases = cases
+    .filter((c) => {
+      const byClaim =
+        filterClaim === "all" ? true : c.claim_type === filterClaim;
+      const byStatus =
+        filterStatus === "all" ? true : c.status === filterStatus;
+      return byClaim && byStatus;
+    })
+    .sort((a, b) => {
+      if (sortOrder === "oldest") {
+        return new Date(a.created_at) - new Date(b.created_at);
+      }
+      // default: newest first
+      return new Date(b.created_at) - new Date(a.created_at);
+    });
+
   return (
     <main style={{ paddingTop: "5rem", paddingBottom: "3rem" }}>
       <div
@@ -144,124 +187,258 @@ export default function LawyerDashboard() {
         {error && <p style={{ color: "red" }}>שגיאה: {error}</p>}
 
         {!loading && !error && (
-          <div
-            style={{
-              overflowX: "auto",
-              background: "white",
-              borderRadius: "1.2rem",
-              boxShadow: "0 12px 30px rgba(15, 23, 42, 0.08)",
-            }}
-          >
-            <table
+          <>
+            {/* 🔵 פס מסננים + מיון */}
+            <div
               style={{
-                width: "100%",
-                borderCollapse: "collapse",
-                fontSize: "0.9rem",
+                marginBottom: "1rem",
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "0.75rem",
+                alignItems: "center",
               }}
             >
-              <thead>
-                <tr style={{ background: "#f3f4f6" }}>
-                  <th style={thStyle}>מס'</th>
-                  <th style={thStyle}>שם לקוח</th>
-                  <th style={thStyle}>טלפון</th>
-                  <th style={thStyle}>אימייל</th>
-                  <th style={thStyle}>סוג תביעה</th>
-                  <th style={thStyle}>סטטוס תיק</th>
-                  <th style={thStyle}>פגישה</th>
-                </tr>
-              </thead>
+              <div style={{ fontSize: "0.9rem", fontWeight: 500 }}>סינון:</div>
 
-              <tbody>
-                {cases.map((c, idx) => {
-                  const appt = appointments[c.id];
-                  const isPending = appt && appt.status === "pending";
+              <select
+                value={filterClaim}
+                onChange={(e) => setFilterClaim(e.target.value)}
+                style={filterSelectStyle}
+              >
+                <option value="all">כל סוגי התביעות</option>
+                <option value="dismissal">פיטורים שלא כדין</option>
+                <option value="salary">אי תשלום שכר / הלנת שכר</option>
+                <option value="overtime">שעות נוספות</option>
+                <option value="rights">פגיעה בזכויות סוציאליות</option>
+              </select>
 
-                  return (
-                    <tr key={c.id} style={{ borderTop: "1px solid #e5e7eb" }}>
-                      <td style={tdStyle}>{idx + 1}</td>
-                      <td style={tdStyle}>{c.client_name}</td>
-                      <td style={tdStyle}>{c.phone}</td>
-                      <td style={tdStyle}>{c.email}</td>
-                      <td style={tdStyle}>{describeClaimType(c.claim_type)}</td>
-                      <td style={tdStyle}>{describeStatus(c.status)}</td>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                style={filterSelectStyle}
+              >
+                <option value="all">כל הסטטוסים</option>
+                <option value="new">חדש</option>
+                <option value="in_review">בבדיקה</option>
+                <option value="closed">נסגר</option>
+              </select>
 
-                      <td style={{ ...tdStyle, minWidth: "290px" }}>
-                        {!appt ? (
-                          <span style={{ color: "#9ca3af" }}>אין בקשת פגישה</span>
-                        ) : (
-                          <div>
-                            <div>
-                              <b>מבוקש:</b>{" "}
-                              {formatDateTime(appt.requested_datetime)}
-                            </div>
-                            {appt.approved_datetime && (
-                              <div>
-                                <b>מועד שנקבע:</b>{" "}
-                                {formatDateTime(appt.approved_datetime)}
-                              </div>
-                            )}
-                            <div style={{ marginTop: "0.2rem" }}>
-                              <b>סטטוס:</b> {translateStatus(appt.status)}
-                            </div>
+              <div style={{ marginLeft: "auto", fontSize: "0.9rem" }}>
+                <label style={{ marginLeft: "0.4rem" }}>מיון:</label>
+                <select
+                  value={sortOrder}
+                  onChange={(e) => setSortOrder(e.target.value)}
+                  style={filterSelectStyle}
+                >
+                  <option value="newest">מהחדשים לישנים</option>
+                  <option value="oldest">מהישנים לחדשים</option>
+                </select>
+              </div>
+            </div>
 
-                            {/* כפתורים + בחירת זמן רק כשהפגישה ממתינה */}
-                            {isPending && (
-                              <div
+            {/* 🔵 טבלה */}
+            <div
+              style={{
+                overflowX: "auto",
+                background: "white",
+                borderRadius: "1.2rem",
+                boxShadow: "0 12px 30px rgba(15, 23, 42, 0.08)",
+              }}
+            >
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  fontSize: "0.9rem",
+                }}
+              >
+                <thead>
+                  <tr style={{ background: "#f3f4f6" }}>
+                    <th style={thStyle}>מס'</th>
+                    <th style={thStyle}>שם לקוח</th>
+                    <th style={thStyle}>טלפון</th>
+                    <th style={thStyle}>אימייל</th>
+                    <th style={thStyle}>סוג תביעה</th>
+                    <th style={thStyle}>סטטוס תיק</th>
+
+                    {/* ✅ העמודה החדשה לסיכום מה־chatbot */}
+                    <th style={thStyle}>סיכום מה־Chatbot</th>
+
+                    <th style={thStyle}>פגישה</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {filteredCases.map((c, idx) => {
+                    const appt = appointments[c.id];
+                    const isPending = appt && appt.status === "pending";
+
+                    return (
+                      <tr key={c.id} style={{ borderTop: "1px solid #e5e7eb" }}>
+                        <td style={tdStyle}>{idx + 1}</td>
+                        <td style={tdStyle}>{c.client_name}</td>
+                        <td style={tdStyle}>{c.phone}</td>
+                        <td style={tdStyle}>{c.email}</td>
+                        <td style={tdStyle}>{describeClaimType(c.claim_type)}</td>
+
+                        {/* סטטוס תיק + כפתורים */}
+                        <td style={tdStyle}>
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "0.3rem",
+                              alignItems: "flex-start",
+                            }}
+                          >
+                            <span>{describeStatus(c.status)}</span>
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: "0.3rem",
+                                flexWrap: "wrap",
+                              }}
+                            >
+                              <button
+                                type="button"
+                                onClick={() => updateCaseStatus(c.id, "new")}
+                                disabled={c.status === "new"}
                                 style={{
-                                  marginTop: "0.6rem",
-                                  display: "flex",
-                                  gap: "0.5rem",
-                                  flexWrap: "wrap",
-                                  alignItems: "center",
+                                  ...smallStatusBtn,
+                                  opacity: c.status === "new" ? 0.5 : 1,
                                 }}
                               >
-                                <button
-                                  onClick={() => approveAppt(appt.id)}
-                                  style={btnApprove}
-                                >
-                                  אישור
-                                </button>
-
-                                <input
-                                  type="datetime-local"
-                                  value={draftTimes[appt.id] || ""}
-                                  onChange={(e) =>
-                                    setDraftTimes((prev) => ({
-                                      ...prev,
-                                      [appt.id]: e.target.value,
-                                    }))
-                                  }
-                                  style={{
-                                    padding: "0.35rem 0.5rem",
-                                    borderRadius: "0.5rem",
-                                    border: "1px solid #d1d5db",
-                                  }}
-                                />
-
-                                <button
-                                  onClick={() => suggestAppt(appt.id)}
-                                  style={btnSuggest}
-                                >
-                                  הצעת מועד חדש
-                                </button>
-
-                                <button
-                                  onClick={() => rejectAppt(appt.id)}
-                                  style={btnReject}
-                                >
-                                  דחייה
-                                </button>
-                              </div>
-                            )}
+                                סמן כ"חדש"
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  updateCaseStatus(c.id, "in_review")
+                                }
+                                disabled={c.status === "in_review"}
+                                style={{
+                                  ...smallStatusBtn,
+                                  background: "#f97316",
+                                  opacity: c.status === "in_review" ? 0.5 : 1,
+                                }}
+                              >
+                                בבדיקה
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => updateCaseStatus(c.id, "closed")}
+                                disabled={c.status === "closed"}
+                                style={{
+                                  ...smallStatusBtn,
+                                  background: "#6b7280",
+                                  opacity: c.status === "closed" ? 0.5 : 1,
+                                }}
+                              >
+                                סגור תיק
+                              </button>
+                            </div>
                           </div>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                        </td>
+
+                        {/* ✅ תא עם סיכום מה־Chatbot */}
+                        <td style={{ ...tdStyle, maxWidth: "260px" }}>
+                          <div
+                            style={{
+                              whiteSpace: "pre-wrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              cursor: c.notes_from_chatbot ? "pointer" : "default",
+                              color: c.notes_from_chatbot ? "#2563eb" : "#6b7280",
+                            }}
+                            title={
+                              c.notes_from_chatbot || "אין סיכום שנשמר מה־chatbot"
+                            }
+                          >
+                            {c.notes_from_chatbot ? c.notes_from_chatbot : "—"}
+                          </div>
+                        </td>
+
+                        {/* פגישות */}
+                        <td style={{ ...tdStyle, minWidth: "290px" }}>
+                          {!appt ? (
+                            <span style={{ color: "#9ca3af" }}>
+                              אין בקשת פגישה
+                            </span>
+                          ) : (
+                            <div>
+                              <div>
+                                <b>מבוקש:</b>{" "}
+                                {formatDateTime(appt.requested_datetime)}
+                              </div>
+                              {appt.approved_datetime && (
+                                <div>
+                                  <b>מועד שנקבע:</b>{" "}
+                                  {formatDateTime(appt.approved_datetime)}
+                                </div>
+                              )}
+                              <div style={{ marginTop: "0.2rem" }}>
+                                <b>סטטוס:</b> {translateStatus(appt.status)}
+                              </div>
+
+                              {/* כפתורים + בחירת זמן רק כשהפגישה ממתינה */}
+                              {isPending && (
+                                <div
+                                  style={{
+                                    marginTop: "0.6rem",
+                                    display: "flex",
+                                    gap: "0.5rem",
+                                    flexWrap: "wrap",
+                                    alignItems: "center",
+                                  }}
+                                >
+                                  <button
+                                    onClick={() => approveAppt(appt.id)}
+                                    style={btnApprove}
+                                  >
+                                    אישור
+                                  </button>
+
+                                  <input
+                                    type="datetime-local"
+                                    value={draftTimes[appt.id] || ""}
+                                    onChange={(e) =>
+                                      setDraftTimes((prev) => ({
+                                        ...prev,
+                                        [appt.id]: e.target.value,
+                                      }))
+                                    }
+                                    style={{
+                                      padding: "0.35rem 0.5rem",
+                                      borderRadius: "0.5rem",
+                                      border: "1px solid #d1d5db",
+                                    }}
+                                  />
+
+                                  <button
+                                    onClick={() => suggestAppt(appt.id)}
+                                    style={btnSuggest}
+                                  >
+                                    הצעת מועד חדש
+                                  </button>
+
+                                  <button
+                                    onClick={() => rejectAppt(appt.id)}
+                                    style={btnReject}
+                                  >
+                                    דחייה
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </main>
@@ -303,6 +480,26 @@ const btnReject = {
   border: "none",
   borderRadius: "8px",
   padding: "6px 10px",
+  cursor: "pointer",
+};
+
+// סגנון למסננים
+const filterSelectStyle = {
+  padding: "0.45rem 0.7rem",
+  borderRadius: "999px",
+  border: "1px solid #d1d5db",
+  fontSize: "0.85rem",
+  background: "white",
+};
+
+// כפתורי סטטוס קטנים
+const smallStatusBtn = {
+  background: "#22c55e",
+  color: "white",
+  border: "none",
+  borderRadius: "999px",
+  padding: "3px 8px",
+  fontSize: "0.75rem",
   cursor: "pointer",
 };
 

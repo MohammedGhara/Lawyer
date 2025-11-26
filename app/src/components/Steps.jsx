@@ -1,36 +1,37 @@
+// app/src/components/Steps.jsx
 import React from "react";
 
 const steps = [
   {
     number: 1,
     title: "מילוי טופס פשוט",
-    text: "ממלאים פרטים בסיסיים ומעלים מסמכים רלוונטיים.",
+    text: "ממלאים פרטים בסיסיים ומעלים מסמכים רלוונטיים – חוזה, תלושי שכר ועוד.",
   },
   {
     number: 2,
     title: "שיחה עם עוזר חכם",
-    text: "הצ׳אטבוט שלנו אוסף את כל המידע הנדרש לתיק שלכם.",
+    text: "הצ׳אטבוט שלנו מסדר את הסיפור, שואל שאלות השלמה ומכין תקציר ברור.",
   },
   {
     number: 3,
     title: "קביעת פגישה",
-    text: "בוחרים מועד נוח לפגישה עם עורך הדין.",
+    text: "בוחרים מועד נוח לפגישה עם עורך הדין – פרונטלית או אונליין.",
   },
   {
     number: 4,
     title: "ליווי מקצועי",
-    text: "עורך דין מומחה בדיני עבודה ילווה אתכם בתהליך.",
+    text: "עורך דין מומחה בדיני עבודה מלווה אתכם עד לקבלת ההחלטה הנכונה.",
   },
 ];
 
 export default function Steps() {
   return (
-    <section style={{ background: "white" }}>
+    <section id="how-it-works" style={{ background: "white" }}>
       <div
         style={{
           maxWidth: "1100px",
           margin: "0 auto",
-          padding: "3rem 1.5rem 3.5rem",
+          padding: "3.2rem 1.5rem 3.6rem",
         }}
       >
         <h2
@@ -38,7 +39,7 @@ export default function Steps() {
             fontSize: "2rem",
             fontWeight: 700,
             textAlign: "center",
-            marginBottom: "0.5rem",
+            marginBottom: "0.7rem",
           }}
         >
           איך זה עובד?
@@ -47,10 +48,10 @@ export default function Steps() {
           style={{
             textAlign: "center",
             color: "#6b7280",
-            marginBottom: "2.5rem",
+            marginBottom: "2.4rem",
           }}
         >
-          תהליך פשוט בארבעה שלבים שיעזור לכם לקבל את הזכויות המגיעות לכם.
+          תהליך ברור, מרגע מילוי הטופס ועד לפגישה עם עורך הדין.
         </p>
 
         <div
@@ -58,6 +59,7 @@ export default function Steps() {
             display: "grid",
             gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
             gap: "1.5rem",
+            direction: "rtl",
           }}
         >
           {steps.map((step) => (
@@ -67,8 +69,9 @@ export default function Steps() {
                 position: "relative",
                 background: "#f9fafb",
                 borderRadius: "1.25rem",
-                padding: "1.5rem",
+                padding: "1.6rem 1.3rem 1.4rem",
                 boxShadow: "0 10px 25px rgba(15, 23, 42, 0.06)",
+                border: "1px solid #e5e7eb",
               }}
             >
               <div
@@ -76,8 +79,8 @@ export default function Steps() {
                   position: "absolute",
                   top: "-0.85rem",
                   left: "1.2rem",
-                  width: "2.1rem",
-                  height: "2.1rem",
+                  width: "2.2rem",
+                  height: "2.2rem",
                   borderRadius: "999px",
                   background: "#2563eb",
                   color: "white",
@@ -85,7 +88,7 @@ export default function Steps() {
                   alignItems: "center",
                   justifyContent: "center",
                   fontWeight: 700,
-                  fontSize: "0.95rem",
+                  fontSize: "1rem",
                   boxShadow: "0 10px 20px rgba(37, 99, 235, 0.4)",
                 }}
               >
@@ -95,7 +98,7 @@ export default function Steps() {
                 style={{
                   fontSize: "1.05rem",
                   fontWeight: 600,
-                  marginBottom: "0.4rem",
+                  marginBottom: "0.5rem",
                 }}
               >
                 {step.title}
