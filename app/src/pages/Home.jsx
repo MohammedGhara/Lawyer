@@ -64,6 +64,7 @@ export default function Home({ onStartIntake }) {
         .sl-home-root {
           min-height: 100vh;
           background: #0f172a;
+          padding-top: 80px;
         }
 
         .sl-hero {
@@ -73,9 +74,9 @@ export default function Home({ onStartIntake }) {
         }
 
         .sl-container {
-          max-width: 1120px;
+          max-width: 1200px;
           margin: 0 auto;
-          padding: 4.5rem 1.5rem 4rem;
+          padding: 6rem 1.5rem 5rem;
         }
 
         .sl-grid-hero {
@@ -92,42 +93,117 @@ export default function Home({ onStartIntake }) {
           .sl-hero-text {
             text-align: center;
           }
+          .sl-hero-title {
+            font-size: 2.8rem;
+          }
+          .sl-hero-sub {
+            font-size: 1.2rem;
+          }
+          .sl-btn-primary,
+          .sl-btn-ghost {
+            font-size: 1rem;
+            padding: 1rem 2rem;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .sl-hero-title {
+            font-size: 2.2rem;
+          }
+          .sl-hero-sub {
+            font-size: 1.1rem;
+          }
+          .sl-section-title {
+            font-size: 2.2rem;
+          }
+          .sl-section-sub {
+            font-size: 1.05rem;
+          }
         }
 
         .sl-pill {
           display: inline-flex;
           align-items: center;
-          gap: 0.4rem;
-          padding: 0.25rem 0.7rem;
+          gap: 0.5rem;
+          padding: 0.4rem 1rem;
           border-radius: 999px;
-          background: rgba(15, 23, 42, 0.8);
-          font-size: 0.8rem;
-          margin-bottom: 0.9rem;
+          background: rgba(15, 23, 42, 0.85);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(148, 163, 184, 0.2);
+          font-size: 1rem;
+          font-weight: 500;
+          margin-bottom: 1.2rem;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          animation: fadeInDown 0.8s ease-out;
+        }
+
+        .sl-pill:hover {
+          background: rgba(15, 23, 42, 0.95);
+          transform: translateY(-2px);
+          box-shadow: 0 8px 20px rgba(34, 197, 94, 0.2);
         }
 
         .sl-pill-dot {
-          width: 16px;
-          height: 16px;
+          width: 10px;
+          height: 10px;
           border-radius: 999px;
           background: #22c55e;
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          font-size: 0.8rem;
+          font-size: 0.7rem;
+          box-shadow: 0 0 12px rgba(34, 197, 94, 0.6);
+          animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.8; transform: scale(1.1); }
         }
 
         .sl-hero-title {
-          font-size: 2.5rem;
-          line-height: 1.2;
-          font-weight: 800;
-          margin-bottom: 0.8rem;
+          font-size: 3.8rem;
+          line-height: 1.15;
+          font-weight: 900;
+          margin-bottom: 1.2rem;
+          background: linear-gradient(135deg, #ffffff 0%, #e0e7ff 50%, #c7d2fe 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          letter-spacing: -0.03em;
+          animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes fadeInDown {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
 
         .sl-hero-sub {
-          font-size: 1.03rem;
+          font-size: 1.4rem;
+          line-height: 1.7;
           color: #e5e7eb;
-          max-width: 540px;
-          margin-bottom: 1.9rem;
+          max-width: 600px;
+          margin-bottom: 2.2rem;
+          font-weight: 400;
+          animation: fadeInUp 0.8s ease-out 0.4s both;
         }
 
         .sl-hero-ctas {
@@ -138,51 +214,80 @@ export default function Home({ onStartIntake }) {
         }
 
         .sl-btn-primary {
-          padding: 0.95rem 1.9rem;
+          padding: 1.1rem 2.4rem;
           border-radius: 999px;
           border: none;
           background: linear-gradient(135deg, #2563eb, #22c55e);
           color: white;
-          font-weight: 600;
-          font-size: 1rem;
+          font-weight: 700;
+          font-size: 1.15rem;
           cursor: pointer;
-          box-shadow: 0 18px 40px rgba(37, 99, 235, 0.55);
-          transition: transform 0.18s ease, box-shadow 0.18s ease;
+          box-shadow: 0 20px 50px rgba(37, 99, 235, 0.6);
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          position: relative;
+          overflow: hidden;
+          animation: fadeInUp 0.8s ease-out 0.6s both;
+        }
+
+        .sl-btn-primary::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(135deg, #3b82f6, #34d399);
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        }
+
+        .sl-btn-primary:hover::before {
+          opacity: 1;
         }
 
         .sl-btn-primary:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 20px 45px rgba(37, 99, 235, 0.7);
+          transform: translateY(-3px) scale(1.02);
+          box-shadow: 0 25px 60px rgba(37, 99, 235, 0.8);
+        }
+
+        .sl-btn-primary:active {
+          transform: translateY(-1px) scale(1);
         }
 
         .sl-btn-ghost {
-          padding: 0.9rem 1.7rem;
+          padding: 1.1rem 2rem;
           border-radius: 999px;
-          border: 1px solid rgba(148, 163, 184, 0.75);
-          background: transparent;
+          border: 2px solid rgba(148, 163, 184, 0.6);
+          background: rgba(15, 23, 42, 0.3);
+          backdrop-filter: blur(10px);
           color: #e5e7eb;
-          font-weight: 500;
-          font-size: 0.96rem;
+          font-weight: 600;
+          font-size: 1.1rem;
           cursor: pointer;
-          transition: background 0.18s ease, color 0.18s ease;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          animation: fadeInUp 0.8s ease-out 0.7s both;
         }
 
         .sl-btn-ghost:hover {
-          background: rgba(15, 23, 42, 0.9);
+          background: rgba(15, 23, 42, 0.6);
+          border-color: rgba(148, 163, 184, 0.9);
           color: #ffffff;
+          transform: translateY(-2px);
+          box-shadow: 0 10px 30px rgba(15, 23, 42, 0.4);
         }
 
         .sl-hero-trust {
           display: flex;
           flex-wrap: wrap;
-          gap: 1.2rem;
-          font-size: 0.9rem;
-          color: #9ca3af;
+          gap: 1.5rem;
+          font-size: 1.1rem;
+          color: #cbd5e1;
+          font-weight: 500;
+          animation: fadeInUp 0.8s ease-out 0.8s both;
         }
 
         .sl-hero-trust-dot {
-          margin-left: 0.3rem;
+          margin-left: 0.4rem;
           color: #22c55e;
+          font-size: 0.8rem;
+          animation: pulse 2s ease-in-out infinite;
         }
 
         /* Chat card */
@@ -193,12 +298,18 @@ export default function Home({ onStartIntake }) {
 
         .sl-hero-card {
           width: 100%;
-          max-width: 380px;
-          border-radius: 1.5rem;
-          padding: 1.4rem 1.2rem;
+          max-width: 400px;
+          border-radius: 1.8rem;
+          padding: 1.6rem 1.4rem;
           background: linear-gradient(145deg, rgba(15,23,42,0.95), rgba(30,64,175,0.9));
           box-shadow: 0 24px 60px rgba(15, 23, 42, 0.8);
           animation: sl-float 7s ease-in-out infinite;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .sl-hero-card:hover {
+          transform: translateY(-5px) scale(1.02);
+          box-shadow: 0 30px 80px rgba(15, 23, 42, 1);
         }
 
         .sl-window-dots {
@@ -221,17 +332,19 @@ export default function Home({ onStartIntake }) {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          margin-bottom: 1rem;
-          font-size: 0.8rem;
-          color: #9ca3af;
+          margin-bottom: 1.2rem;
+          font-size: 0.95rem;
+          color: #cbd5e1;
+          font-weight: 500;
         }
 
         .sl-chat-bubble-user,
         .sl-chat-bubble-bot {
           max-width: 85%;
-          padding: 0.65rem 0.8rem;
-          border-radius: 1rem;
-          font-size: 0.83rem;
+          padding: 0.85rem 1rem;
+          border-radius: 1.2rem;
+          font-size: 1rem;
+          line-height: 1.6;
         }
 
         .sl-chat-bubble-user {
@@ -255,25 +368,36 @@ export default function Home({ onStartIntake }) {
         .sl-card-stats {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 0.7rem;
-          margin-top: 1rem;
-          font-size: 0.8rem;
+          gap: 0.8rem;
+          margin-top: 1.2rem;
+          font-size: 0.95rem;
         }
 
         .sl-card-stat {
-          padding: 0.6rem 0.7rem;
-          border-radius: 0.9rem;
-          background: rgba(15, 23, 42, 0.85);
-          border: 1px solid rgba(55, 65, 81, 0.9);
+          padding: 0.8rem 0.9rem;
+          border-radius: 1rem;
+          background: rgba(15, 23, 42, 0.9);
+          border: 1px solid rgba(55, 65, 81, 0.5);
+          transition: all 0.3s ease;
+        }
+
+        .sl-card-stat:hover {
+          background: rgba(15, 23, 42, 0.95);
+          border-color: rgba(59, 130, 246, 0.5);
+          transform: translateY(-2px);
         }
 
         .sl-card-stat-label {
           color: #9ca3af;
-          margin-bottom: 0.15rem;
+          margin-bottom: 0.2rem;
+          font-size: 0.85rem;
+          font-weight: 500;
         }
 
         .sl-card-stat-value {
           font-weight: 700;
+          font-size: 1rem;
+          color: #e5e7eb;
         }
 
         /* Sections below */
@@ -286,23 +410,33 @@ export default function Home({ onStartIntake }) {
         }
 
         .sl-section-inner {
-          max-width: 1120px;
+          max-width: 1200px;
           margin: 0 auto;
-          padding: 3.3rem 1.5rem 3.7rem;
+          padding: 4.5rem 1.5rem 5rem;
         }
 
         .sl-section-title {
-          font-size: 2rem;
-          font-weight: 700;
+          font-size: 2.8rem;
+          font-weight: 800;
           text-align: center;
-          margin-bottom: 0.6rem;
+          margin-bottom: 1rem;
+          background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          letter-spacing: -0.02em;
         }
 
         .sl-section-sub {
           text-align: center;
           color: #6b7280;
-          margin-bottom: 2.4rem;
-          font-size: 0.98rem;
+          margin-bottom: 3rem;
+          font-size: 1.2rem;
+          line-height: 1.7;
+          font-weight: 400;
+          max-width: 800px;
+          margin-left: auto;
+          margin-right: auto;
         }
 
         /* ===== NEW STEPS DESIGN ===== */
@@ -328,20 +462,20 @@ export default function Home({ onStartIntake }) {
        .sl-step-card {
           position: relative;
           background: radial-gradient(circle at top, #f9fafb 0, #ffffff 45%, #f3f4f6 100%);
-          border-radius: 1.8rem;
-          padding: 3rem 1.8rem 2.4rem; /* BIGGER */
-          min-height: 230px;           /* NEW — makes the card taller */
+          border-radius: 2rem;
+          padding: 3.5rem 2rem 2.8rem;
+          min-height: 280px;
           box-shadow:
-            0 22px 48px rgba(15, 23, 42, 0.08),
+            0 25px 55px rgba(15, 23, 42, 0.1),
             0 0 0 1px rgba(148, 163, 184, 0.16);
           text-align: center;
-          transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .sl-step-card:hover {
-          transform: translateY(-5px);
+          transform: translateY(-8px) scale(1.02);
           box-shadow:
-            0 26px 60px rgba(15, 23, 42, 0.12),
-            0 0 0 1px rgba(37, 99, 235, 0.25);
+            0 35px 75px rgba(15, 23, 42, 0.15),
+            0 0 0 1px rgba(37, 99, 235, 0.3);
           background: radial-gradient(circle at top, #eff6ff 0, #ffffff 55%, #eef2ff 100%);
         }
 
@@ -383,17 +517,18 @@ export default function Home({ onStartIntake }) {
 
 
         .sl-step-title {
-          margin-top: 0.4rem;
-          margin-bottom: 0.5rem;
-          font-size: 1.05rem;
+          margin-top: 0.5rem;
+          margin-bottom: 0.7rem;
+          font-size: 1.3rem;
           font-weight: 700;
           color: #0f172a;
         }
 
         .sl-step-text {
-          font-size: 0.9rem;
+          font-size: 1.1rem;
           color: #4b5563;
-          line-height: 1.6;
+          line-height: 1.75;
+          font-weight: 400;
         }
 
         /* Domains section stays mostly as before */
@@ -411,21 +546,30 @@ export default function Home({ onStartIntake }) {
 
         .sl-domain-card {
           background: #ffffff;
-          border-radius: 1rem;
-          padding: 1.2rem 1.4rem;
+          border-radius: 1.2rem;
+          padding: 1.5rem 1.8rem;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+          box-shadow: 0 8px 25px rgba(15, 23, 42, 0.06);
           border: 1px solid #e5e7eb;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .sl-domain-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 12px 35px rgba(15, 23, 42, 0.12);
+          border-color: #3b82f6;
+          background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
         }
 
         .sl-domain-text {
           flex: 1;
           margin-right: 0.8rem;
-          font-size: 1.02rem;
-          font-weight: 500;
+          font-size: 1.25rem;
+          font-weight: 600;
           color: #111827;
+          line-height: 1.6;
         }
 
         .sl-domain-icon {
@@ -451,16 +595,19 @@ export default function Home({ onStartIntake }) {
         }
 
         .sl-cta-bottom-text {
-          margin-bottom: 1rem;
-          font-size: 1.02rem;
+          margin-bottom: 1.5rem;
+          font-size: 1.25rem;
           color: #374151;
+          line-height: 1.7;
+          font-weight: 400;
         }
 
         /* Scroll animation */
         [data-sl-animate] {
           opacity: 0;
-          transform: translateY(24px);
-          transition: opacity 0.6s ease, transform 0.6s ease;
+          transform: translateY(40px);
+          transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), 
+                      transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .sl-animate-in {
@@ -470,9 +617,18 @@ export default function Home({ onStartIntake }) {
 
         /* Float animation for the hero card */
         @keyframes sl-float {
-          0%   { transform: translateY(0px); }
-          50%  { transform: translateY(-8px); }
-          100% { transform: translateY(0px); }
+          0%   { transform: translateY(0px) rotate(0deg); }
+          50%  { transform: translateY(-12px) rotate(1deg); }
+          100% { transform: translateY(0px) rotate(0deg); }
+        }
+
+        .sl-hero-card {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .sl-hero-card:hover {
+          transform: translateY(-5px) scale(1.02);
+          box-shadow: 0 30px 80px rgba(15, 23, 42, 1);
         }
       `}</style>
 
