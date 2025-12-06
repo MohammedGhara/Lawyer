@@ -1,13 +1,19 @@
+// app/src/App.jsx
 import React from "react";
 import { Routes, Route, useNavigate } from "react-router-dom";
+
 import Navbar from "./components/Navbar.jsx";
 import Home from "./pages/Home.jsx";
-import IntakeForm from "./pages/IntakeForm.jsx"; // חדש
+import IntakeForm from "./pages/IntakeForm.jsx";
 import Chatbot from "./pages/Chatbot.jsx";
 import LawyerDashboard from "./pages/LawyerDashboard.jsx";
 import AppointmentPicker from "./pages/AppointmentPicker.jsx";
 import LawyerLogin from "./pages/LawyerLogin.jsx";
 import RequireLawyer from "./components/RequireLawyer.jsx";
+
+// 🔐 דף המנהל עם סיסמה פנימית
+import AdminDomainsPage from "./pages/AdminDomainsPage.jsx";
+
 export default function App() {
   const navigate = useNavigate();
 
@@ -20,17 +26,26 @@ export default function App() {
       <Navbar />
       <Routes>
         <Route path="/" element={<Home onStartIntake={handleStartIntake} />} />
-        <Route path="/intake" element={<IntakeForm />} /> {/* חדש */}
-        <Route path="/chat/:caseId" element={<Chatbot />} />   {}
-          <Route
+        <Route path="/intake" element={<IntakeForm />} />
+        <Route path="/chat/:caseId" element={<Chatbot />} />
+
+        {/* דשבורד עו"ד רגיל – לפי תפקיד */}
+        <Route
           path="/lawyer"
           element={
             <RequireLawyer>
               <LawyerDashboard />
             </RequireLawyer>
           }
-            />
-          <Route path="/cases/:caseId/appointment" element={<AppointmentPicker />} />
+        />
+
+        {/* 🔐 דף מנהל תחומי ידע – עם סיסמה (לא קשור ל־RequireLawyer) */}
+        <Route path="/admin-domains" element={<AdminDomainsPage />} />
+
+        <Route
+          path="/cases/:caseId/appointment"
+          element={<AppointmentPicker />}
+        />
         <Route path="/lawyer-login" element={<LawyerLogin />} />
       </Routes>
     </div>

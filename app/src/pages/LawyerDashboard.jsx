@@ -1,6 +1,7 @@
 // app/src/pages/LawyerDashboard.jsx
 import React, { useEffect, useState } from "react";
-import '../styles/LawyerDashboard.css';
+import { Link } from "react-router-dom";
+import "../styles/LawyerDashboard.css";
 
 const API_BASE = "http://127.0.0.1:8000/api";
 
@@ -11,7 +12,6 @@ export default function LawyerDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // 🔵 סינון + מיון
   const [filterClaim, setFilterClaim] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [sortOrder, setSortOrder] = useState("newest");
@@ -20,7 +20,6 @@ export default function LawyerDashboard() {
     loadAllData();
   }, []);
 
-  // Smooth animations on mount
   useEffect(() => {
     const elements = document.querySelectorAll("[data-dashboard-animate]");
     const observer = new IntersectionObserver(
@@ -46,12 +45,10 @@ export default function LawyerDashboard() {
       setLoading(true);
       setError(null);
 
-      // 1) תיקים
       const resCases = await fetch(`${API_BASE}/cases/list/`);
       if (!resCases.ok) throw new Error("שגיאה בשליפת רשימת תיקים");
       const casesData = await resCases.json();
 
-      // 2) פגישות
       const resAppt = await fetch(`${API_BASE}/appointments/list/`);
       if (!resAppt.ok) throw new Error("שגיאה בטעינת פגישות");
       const apptData = await resAppt.json();
@@ -71,7 +68,6 @@ export default function LawyerDashboard() {
     }
   }
 
-  // ---------- עדכון סטטוס תיק (עורך דין) ----------
   async function updateCaseStatus(caseId, newStatus) {
     try {
       const res = await fetch(`${API_BASE}/cases/${caseId}/status/`, {
@@ -92,15 +88,12 @@ export default function LawyerDashboard() {
     }
   }
 
-  // ---------- פעולות עו״ד על פגישה ----------
-
-  // אישור – בלי לבחור זמן חדש (השרת משתמש ב-requested_datetime)
   async function approveAppt(id) {
     try {
       await fetch(`${API_BASE}/appointments/${id}/approve/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}), // אין חובה על תאריך
+        body: JSON.stringify({}),
       });
       await loadAllData();
     } catch (err) {
@@ -109,7 +102,6 @@ export default function LawyerDashboard() {
     }
   }
 
-  // דחייה – דורש בחירת תאריך/שעה (רק בשבילך ב־UI)
   async function rejectAppt(id) {
     const dt = draftTimes[id];
     if (!dt) {
@@ -128,7 +120,6 @@ export default function LawyerDashboard() {
     }
   }
 
-  // הצעת מועד חדש – חובה לבחור dateTime
   async function suggestAppt(id) {
     const dt = draftTimes[id];
     if (!dt) {
@@ -175,7 +166,6 @@ export default function LawyerDashboard() {
     });
   }
 
-  // ---------- סינון + מיון תיקים לתצוגה ----------
   const filteredCases = cases
     .filter((c) => {
       const byClaim =
@@ -188,257 +178,290 @@ export default function LawyerDashboard() {
       if (sortOrder === "oldest") {
         return new Date(a.created_at) - new Date(b.created_at);
       }
-      // default: newest first
       return new Date(b.created_at) - new Date(a.created_at);
     });
 
   return (
-    <>
-      
+    <main className="sl-dashboard-page" dir="rtl">
+      <div className="sl-dashboard-container">
+        <h1 className="sl-dashboard-title" data-dashboard-animate>
+          דאשבורד עורך הדין – ניהול תיקים ופגישות
+        </h1>
 
-      <main className="sl-dashboard-page" dir="rtl">
-        <div className="sl-dashboard-container">
-          <h1 className="sl-dashboard-title" data-dashboard-animate>
-            דאשבורד עורך הדין – ניהול תיקים ופגישות
-          </h1>
+        {loading && (
+          <div className="sl-loading" data-dashboard-animate>
+            טוען נתונים...
+          </div>
+        )}
 
-          {loading && (
-            <div className="sl-loading" data-dashboard-animate>
-              טוען נתונים...
+        {error && (
+          <div className="sl-error" data-dashboard-animate>
+            שגיאה: {error}
+          </div>
+        )}
+
+        {!loading && !error && (
+          <>
+            <div
+              style={{
+                textAlign: "right",
+                marginBottom: 12,
+              }}
+              data-dashboard-animate
+            >
+              <Link
+                to="/lawyer/domains"
+                style={{
+                  display: "inline-block",
+                  padding: "10px 22px",
+                  borderRadius: 9999,
+                  background:
+                    "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 50%, #1e40af 100%)",
+                  color: "white",
+                  fontWeight: 600,
+                  textDecoration: "none",
+                  boxShadow: "0 12px 30px rgba(15,23,42,0.6)",
+                }}
+              >
+                ניהול תחומים ומאגרים
+              </Link>
             </div>
-          )}
 
-          {error && (
-            <div className="sl-error" data-dashboard-animate>
-              שגיאה: {error}
-            </div>
-          )}
+            <div className="sl-dashboard-filters" data-dashboard-animate>
+              <span className="sl-filter-label">סינון:</span>
 
-          {!loading && !error && (
-            <>
-              {/* 🔵 פס מסננים + מיון */}
-              <div className="sl-dashboard-filters" data-dashboard-animate>
-                <span className="sl-filter-label">סינון:</span>
-
-                <div className={`sl-filter-select-wrapper ${filterClaim !== "all" ? "has-selection" : ""}`}>
-                  <select
-                    value={filterClaim}
-                    onChange={(e) => setFilterClaim(e.target.value)}
-                    className="sl-filter-select"
-                  >
-                    <option value="all">כל סוגי התביעות</option>
-                    <option value="dismissal">פיטורים שלא כדין</option>
-                    <option value="salary">אי תשלום שכר / הלנת שכר</option>
-                    <option value="overtime">שעות נוספות</option>
-                    <option value="rights">פגיעה בזכויות סוציאליות</option>
-                  </select>
-                </div>
-
-                <div className={`sl-filter-select-wrapper ${filterStatus !== "all" ? "has-selection" : ""}`}>
-                  <select
-                    value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value)}
-                    className="sl-filter-select"
-                  >
-                    <option value="all">כל הסטטוסים</option>
-                    <option value="new">חדש</option>
-                    <option value="in_review">בבדיקה</option>
-                    <option value="closed">נסגר</option>
-                  </select>
-                </div>
-
-                <div className="sl-sort-wrapper">
-                  <span className="sl-filter-label">מיון:</span>
-                  <div className={`sl-filter-select-wrapper ${sortOrder !== "newest" ? "has-selection" : ""}`}>
-                    <select
-                      value={sortOrder}
-                      onChange={(e) => setSortOrder(e.target.value)}
-                      className="sl-filter-select"
-                    >
-                      <option value="newest">מהחדשים לישנים</option>
-                      <option value="oldest">מהישנים לחדשים</option>
-                    </select>
-                  </div>
-                </div>
+              <div
+                className={`sl-filter-select-wrapper ${
+                  filterClaim !== "all" ? "has-selection" : ""
+                }`}
+              >
+                <select
+                  value={filterClaim}
+                  onChange={(e) => setFilterClaim(e.target.value)}
+                  className="sl-filter-select"
+                >
+                  <option value="all">כל סוגי התביעות</option>
+                  <option value="dismissal">פיטורים שלא כדין</option>
+                  <option value="salary">אי תשלום שכר / הלנת שכר</option>
+                  <option value="overtime">שעות נוספות</option>
+                  <option value="rights">פגיעה בזכויות סוציאליות</option>
+                </select>
               </div>
 
-              {/* 🔵 טבלה */}
-              <div className="sl-dashboard-table-wrapper" data-dashboard-animate>
-                <table className="sl-dashboard-table">
-                  <thead>
-                    <tr>
-                      <th>מס'</th>
-                      <th>שם לקוח</th>
-                      <th>טלפון</th>
-                      <th>אימייל</th>
-                      <th>סוג תביעה</th>
-                      <th>סטטוס תיק</th>
-                      <th>סיכום מה־Chatbot</th>
-                      <th>פגישה</th>
-                    </tr>
-                  </thead>
+              <div
+                className={`sl-filter-select-wrapper ${
+                  filterStatus !== "all" ? "has-selection" : ""
+                }`}
+              >
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="sl-filter-select"
+                >
+                  <option value="all">כל הסטטוסים</option>
+                  <option value="new">חדש</option>
+                  <option value="in_review">בבדיקה</option>
+                  <option value="closed">נסגר</option>
+                </select>
+              </div>
 
-                  <tbody>
-                    {filteredCases.map((c, idx) => {
-                      const appt = appointments[c.id];
-                      const isPending = appt && appt.status === "pending";
+              <div className="sl-sort-wrapper">
+                <span className="sl-filter-label">מיון:</span>
+                <div
+                  className={`sl-filter-select-wrapper ${
+                    sortOrder !== "newest" ? "has-selection" : ""
+                  }`}
+                >
+                  <select
+                    value={sortOrder}
+                    onChange={(e) => setSortOrder(e.target.value)}
+                    className="sl-filter-select"
+                  >
+                    <option value="newest">מהחדשים לישנים</option>
+                    <option value="oldest">מהישנים לחדשים</option>
+                  </select>
+                </div>
+              </div>
+            </div>
 
-                      return (
-                        <tr key={c.id} data-dashboard-animate>
-                          <td>{idx + 1}</td>
-                          <td>{c.client_name}</td>
-                          <td>{c.phone}</td>
-                          <td>{c.email}</td>
-                          <td>{describeClaimType(c.claim_type)}</td>
+            <div
+              className="sl-dashboard-table-wrapper"
+              data-dashboard-animate
+            >
+              <table className="sl-dashboard-table">
+                <thead>
+                  <tr>
+                    <th>מס'</th>
+                    <th>שם לקוח</th>
+                    <th>טלפון</th>
+                    <th>אימייל</th>
+                    <th>סוג תביעה</th>
+                    <th>סטטוס תיק</th>
+                    <th>סיכום מה־Chatbot</th>
+                    <th>פגישה</th>
+                  </tr>
+                </thead>
 
-                          {/* סטטוס תיק + כפתורים */}
-                          <td>
-                            <div className="sl-status-container">
-                              <span
-                                className={`sl-status-badge ${
-                                  c.status === "new"
-                                    ? "sl-status-new"
-                                    : c.status === "in_review"
-                                    ? "sl-status-review"
-                                    : "sl-status-closed"
-                                }`}
-                              >
-                                {describeStatus(c.status)}
-                              </span>
-                              <div className="sl-status-buttons">
-                                <button
-                                  type="button"
-                                  onClick={() => updateCaseStatus(c.id, "new")}
-                                  disabled={c.status === "new"}
-                                  className="sl-status-btn"
-                                >
-                                  סמן כ"חדש"
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    updateCaseStatus(c.id, "in_review")
-                                  }
-                                  disabled={c.status === "in_review"}
-                                  className="sl-status-btn sl-status-btn-review"
-                                >
-                                  בבדיקה
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    updateCaseStatus(c.id, "closed")
-                                  }
-                                  disabled={c.status === "closed"}
-                                  className="sl-status-btn sl-status-btn-closed"
-                                >
-                                  סגור תיק
-                                </button>
-                              </div>
-                            </div>
-                          </td>
+                <tbody>
+                  {filteredCases.map((c, idx) => {
+                    const appt = appointments[c.id];
+                    const isPending = appt && appt.status === "pending";
 
-                          {/* ✅ תא עם סיכום מה־Chatbot */}
-                          <td>
-                            <div
-                              className="sl-summary-cell"
-                              title={
-                                c.notes_from_chatbot ||
-                                "אין סיכום שנשמר מה־chatbot"
-                              }
+                    return (
+                      <tr key={c.id} data-dashboard-animate>
+                        <td>{idx + 1}</td>
+                        <td>{c.client_name}</td>
+                        <td>{c.phone}</td>
+                        <td>{c.email}</td>
+                        <td>{describeClaimType(c.claim_type)}</td>
+
+                        <td>
+                          <div className="sl-status-container">
+                            <span
+                              className={`sl-status-badge ${
+                                c.status === "new"
+                                  ? "sl-status-new"
+                                  : c.status === "in_review"
+                                  ? "sl-status-review"
+                                  : "sl-status-closed"
+                              }`}
                             >
-                              {c.notes_from_chatbot ? (
-                                <>
-                                  <div className="sl-summary-header">
-                                    <span className="sl-summary-icon">📝</span>
-                                    <span className="sl-summary-label">סיכום מה־Chatbot</span>
-                                  </div>
-                                  <div className="sl-summary-content">
-                                    {c.notes_from_chatbot}
-                                  </div>
-                                </>
-                              ) : (
-                                <div className="sl-summary-empty">
-                                  <span className="sl-summary-empty-icon">📄</span>
-                                  <span>אין סיכום שנשמר</span>
+                              {describeStatus(c.status)}
+                            </span>
+                            <div className="sl-status-buttons">
+                              <button
+                                type="button"
+                                onClick={() => updateCaseStatus(c.id, "new")}
+                                disabled={c.status === "new"}
+                                className="sl-status-btn"
+                              >
+                                סמן כ"חדש"
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  updateCaseStatus(c.id, "in_review")
+                                }
+                                disabled={c.status === "in_review"}
+                                className="sl-status-btn sl-status-btn-review"
+                              >
+                                בבדיקה
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  updateCaseStatus(c.id, "closed")
+                                }
+                                disabled={c.status === "closed"}
+                                className="sl-status-btn sl-status-btn-closed"
+                              >
+                                סגור תיק
+                              </button>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td>
+                          <div
+                            className="sl-summary-cell"
+                            title={
+                              c.notes_from_chatbot ||
+                              "אין סיכום שנשמר מה־chatbot"
+                            }
+                          >
+                            {c.notes_from_chatbot ? (
+                              <>
+                                <div className="sl-summary-header">
+                                  <span className="sl-summary-icon">📝</span>
+                                  <span className="sl-summary-label">
+                                    סיכום מה־Chatbot
+                                  </span>
+                                </div>
+                                <div className="sl-summary-content">
+                                  {c.notes_from_chatbot}
+                                </div>
+                              </>
+                            ) : (
+                              <div className="sl-summary-empty">
+                                <span className="sl-summary-empty-icon">
+                                  📄
+                                </span>
+                                <span>אין סיכום שנשמר</span>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+
+                        <td className="sl-appointment-cell">
+                          {!appt ? (
+                            <span className="sl-no-appointment">
+                              אין בקשת פגישה
+                            </span>
+                          ) : (
+                            <div>
+                              <div className="sl-appointment-info">
+                                <b>מבוקש:</b>{" "}
+                                {formatDateTime(appt.requested_datetime)}
+                              </div>
+                              {appt.approved_datetime && (
+                                <div className="sl-appointment-info">
+                                  <b>מועד שנקבע:</b>{" "}
+                                  {formatDateTime(appt.approved_datetime)}
+                                </div>
+                              )}
+                              <div className="sl-appointment-info">
+                                <b>סטטוס:</b> {translateStatus(appt.status)}
+                              </div>
+
+                              {isPending && (
+                                <div className="sl-appointment-actions">
+                                  <button
+                                    onClick={() => approveAppt(appt.id)}
+                                    className="sl-appt-btn sl-appt-btn-approve"
+                                  >
+                                    אישור
+                                  </button>
+
+                                  <input
+                                    type="datetime-local"
+                                    value={draftTimes[appt.id] || ""}
+                                    onChange={(e) =>
+                                      setDraftTimes((prev) => ({
+                                        ...prev,
+                                        [appt.id]: e.target.value,
+                                      }))
+                                    }
+                                    className="sl-datetime-input"
+                                  />
+
+                                  <button
+                                    onClick={() => suggestAppt(appt.id)}
+                                    className="sl-appt-btn sl-appt-btn-suggest"
+                                  >
+                                    הצעת מועד חדש
+                                  </button>
+
+                                  <button
+                                    onClick={() => rejectAppt(appt.id)}
+                                    className="sl-appt-btn sl-appt-btn-reject"
+                                  >
+                                    דחייה
+                                  </button>
                                 </div>
                               )}
                             </div>
-                          </td>
-
-                          {/* פגישות */}
-                          <td className="sl-appointment-cell">
-                            {!appt ? (
-                              <span className="sl-no-appointment">
-                                אין בקשת פגישה
-                              </span>
-                            ) : (
-                              <div>
-                                <div className="sl-appointment-info">
-                                  <b>מבוקש:</b>{" "}
-                                  {formatDateTime(appt.requested_datetime)}
-                                </div>
-                                {appt.approved_datetime && (
-                                  <div className="sl-appointment-info">
-                                    <b>מועד שנקבע:</b>{" "}
-                                    {formatDateTime(appt.approved_datetime)}
-                                  </div>
-                                )}
-                                <div className="sl-appointment-info">
-                                  <b>סטטוס:</b> {translateStatus(appt.status)}
-                                </div>
-
-                                {/* כפתורים + בחירת זמן רק כשהפגישה ממתינה */}
-                                {isPending && (
-                                  <div className="sl-appointment-actions">
-                                    <button
-                                      onClick={() => approveAppt(appt.id)}
-                                      className="sl-appt-btn sl-appt-btn-approve"
-                                    >
-                                      אישור
-                                    </button>
-
-                                    <input
-                                      type="datetime-local"
-                                      value={draftTimes[appt.id] || ""}
-                                      onChange={(e) =>
-                                        setDraftTimes((prev) => ({
-                                          ...prev,
-                                          [appt.id]: e.target.value,
-                                        }))
-                                      }
-                                      className="sl-datetime-input"
-                                    />
-
-                                    <button
-                                      onClick={() => suggestAppt(appt.id)}
-                                      className="sl-appt-btn sl-appt-btn-suggest"
-                                    >
-                                      הצעת מועד חדש
-                                    </button>
-
-                                    <button
-                                      onClick={() => rejectAppt(appt.id)}
-                                      className="sl-appt-btn sl-appt-btn-reject"
-                                    >
-                                      דחייה
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          )}
-        </div>
-      </main>
-    </>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      </div>
+    </main>
   );
 }
 

@@ -100,3 +100,43 @@ class Appointment(models.Model):
 
     def __str__(self):
         return f"Appointment for case #{self.case_id} - {self.status}"
+
+class LegalDomain(models.Model):
+    """
+    תחום משפטי + מקור מידע עיקרי בווב (מאגר).
+    למשל: שם: דיני עבודה, source_url: https://www.kolzchut.org.il/...
+    """
+    name = models.CharField(max_length=200, unique=True)        # דיני עבודה, תאונות דרכים...
+    description = models.TextField(blank=True)                  # תיאור קצר, אופציונלי
+    source_url = models.URLField(help_text="כתובת אתר של מאגר הידע")
+    is_active = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Legal domain"
+        verbose_name_plural = "Legal domains"
+
+    def __str__(self):
+        return self.name
+
+class BotMessage(models.Model):
+    domain = models.ForeignKey(
+        LegalDomain,
+        on_delete=models.CASCADE,
+        related_name="messages",
+    )
+    title = models.CharField(max_length=200, blank=True)  # כותרת פנימית / תיאור קצר
+    text = models.TextField()  # תוכן ההודעה שהצ'אטבוט ישתמש בו
+    order = models.PositiveIntegerField(default=1)  # סדר ההודעה בתסריט
+    is_active = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["order", "id"]
+
+    def __str__(self):
+        return f"{self.domain.name} – {self.title or self.text[:30]}"

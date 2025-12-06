@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import Case, CaseDocument, Appointment
+from .models import Case, CaseDocument, Appointment, LegalDomain
+
 
 
 class CaseSerializer(serializers.ModelSerializer):
@@ -47,3 +48,27 @@ class AppointmentSerializer(serializers.ModelSerializer):
             'created_at',
         ]
         read_only_fields = ['id', 'status', 'created_at']
+
+from .models import LegalDomain
+
+class LegalDomainSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LegalDomain
+        fields = "__all__"
+
+# cases/serializers.py
+from .models import BotMessage
+
+class BotMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BotMessage
+        fields = [
+            "id",
+            "domain",
+            "title",
+            "text",
+            "order",
+            "is_active",
+            "created_at",
+            "updated_at",
+        ]

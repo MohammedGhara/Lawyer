@@ -1,4 +1,6 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter   # 👈 مهم
+
 from .views import (
     CaseCreateAPIView,
     CaseListAPIView,
@@ -14,8 +16,13 @@ from .views import (
     AppointmentSuggestAPIView,
     CaseStatusUpdateAPIView,
     lawyer_login,
-    
+    LegalDomainViewSet,
+    BotMessageViewSet,
 )
+
+router = DefaultRouter()
+router.register(r"domains", LegalDomainViewSet, basename="legal-domain")
+router.register(r"bot-messages", BotMessageViewSet, basename="bot-message")
 
 urlpatterns = [
     # ----- תיקים -----
@@ -37,4 +44,7 @@ urlpatterns = [
     path('appointments/<int:appointment_id>/approve/', AppointmentApproveAPIView.as_view(), name='appointment-approve'),
     path('appointments/<int:appointment_id>/reject/', AppointmentRejectAPIView.as_view(), name='appointment-reject'),
     path('appointments/<int:appointment_id>/suggest/', AppointmentSuggestAPIView.as_view(), name='appointment-suggest'),
+
+    # ----- תחומים + מאגרי ידע -----
+    path("", include(router.urls)),   # זה מוסיף /api/domains/ וכו'
 ]

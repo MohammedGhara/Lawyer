@@ -121,10 +121,13 @@ export default function Chatbot() {
   const [done, setDone] = useState(false);
   const [error, setError] = useState(null);
 
-  // שליפת פרטי התיק מהשרת
+  // ───── שליפת פרטי התיק + הודעות מהתחום ─────
   useEffect(() => {
-    async function fetchCase() {
+    async function fetchCaseAndMessages() {
       try {
+        setError(null);
+
+        // 1. שולפים את התיק
         const res = await fetch(`${API_BASE}/cases/${caseId}/`);
         if (!res.ok) throw new Error("שגיאה בשליפת פרטי התיק");
         const data = await res.json();
@@ -133,26 +136,58 @@ export default function Chatbot() {
         const claim = data.claim_type; // dismissal / salary / ...
         const specific = CLAIM_SPECIFIC_QUESTIONS[claim] || [];
         const allQuestions = [...COMMON_QUESTIONS, ...specific];
-
         setQuestions(allQuestions);
 
-        if (allQuestions.length > 0) {
-          setHistory([
-            {
-              from: "bot",
-              text: `שלום ${data.client_name || ""}, נעבור עכשיו כמה שאלות קצרות כדי שנרכז את כל הפרטים החשובים לגבי ${describeClaimType(
-                claim
-              )}.`,
-            },
-            { from: "bot", text: allQuestions[0].text },
-          ]);
+        // 2. מנסים להבין מה ה-ID של התחום המשפטי בתיק
+        const domainId = data.legal_domain || data.domain || null;
+
+        // 3. אם יש תחום – שולפים הודעות בוט מהשרת
+        let scriptMessages = [];
+        if (domainId) {
+          try {
+            const resMessages = await fetch(
+              `${API_BASE}/bot-messages/?domain=${domainId}`
+            );
+            if (resMessages.ok) {
+              const raw = await resMessages.json();
+              scriptMessages = (Array.isArray(raw) ? raw : [])
+                .filter((m) => m.is_active)
+                .sort(
+                  (a, b) => (a.order || 1) - (b.order || 1) || a.id - b.id
+                );
+            }
+          } catch (e) {
+            console.error("Failed to load bot messages", e);
+          }
         }
+
+        // 4. בונים היסטוריה התחלתית: קודם הודעות מהתחום, ואז ברכת פתיחה ושאלה ראשונה
+        const initialHistory = [];
+
+        scriptMessages.forEach((m) => {
+          initialHistory.push({ from: "bot", text: m.text });
+        });
+
+        if (allQuestions.length > 0) {
+          initialHistory.push({
+            from: "bot",
+            text: `שלום ${
+              data.client_name || ""
+            }, נעבור עכשיו כמה שאלות קצרות כדי שנרכז את כל הפרטים החשובים לגבי ${describeClaimType(
+              claim
+            )}.`,
+          });
+          initialHistory.push({ from: "bot", text: allQuestions[0].text });
+        }
+
+        setHistory(initialHistory);
       } catch (err) {
         console.error(err);
         setError(err.message);
       }
     }
-    fetchCase();
+
+    fetchCaseAndMessages();
   }, [caseId]);
 
   // Auto-scroll to bottom when new messages arrive
@@ -294,7 +329,7 @@ export default function Chatbot() {
   const handleFinish = async () => {
     const ok = await handleSaveSummary();
     if (ok) {
-        navigate(`/cases/${caseId}/appointment`);
+      navigate(`/cases/${caseId}/appointment`);
     }
   };
 
@@ -333,13 +368,15 @@ export default function Chatbot() {
   const currentSuggestions =
     (currentQuestion && SUGGESTED_ANSWERS[currentQuestion.key]) || [];
 
-  const progress = Math.round(((currentIdx + (done ? 1 : 0)) / questions.length) * 100);
+  const progress = Math.round(
+    ((currentIdx + (done ? 1 : 0)) / questions.length) * 100
+  );
 
   return (
     <>
       <main className="chat-page" dir="rtl">
         <div className="chat-container">
-          <div style={{ gridColumn: '1 / -1', marginBottom: '1rem' }}>
+          <div style={{ gridColumn: "1 / -1", marginBottom: "1rem" }}>
             <button
               type="button"
               onClick={() => navigate(-1)}

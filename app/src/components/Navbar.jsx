@@ -336,6 +336,15 @@ export default function Navbar() {
               >
                 דף הבית
               </Link>
+              {/* 🔑 כניסת האדמין */}
+                <Link
+                  to="/admin-domains"
+                  className={`navbar-link ${
+                    location.pathname === "/admin-domains" ? "active" : ""
+                  }`}
+                >
+                   אזור מנהל
+                </Link>
 
               {/* Lawyer-specific items */}
               {!isLawyer && (

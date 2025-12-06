@@ -6,12 +6,14 @@ from django.utils.dateparse import parse_datetime
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions
 from rest_framework.decorators import api_view
+from rest_framework import viewsets
 
-from .models import Case, CaseDocument, Appointment
+from .models import Case, CaseDocument, Appointment, LegalDomain
 from .serializers import (
     CaseSerializer,
     CaseDocumentSerializer,
     AppointmentSerializer,
+    LegalDomainSerializer,
 )
 
 # -------------------------------------------------------
@@ -55,10 +57,16 @@ class CaseStatusUpdateAPIView(APIView):
 
         return Response(CaseSerializer(case).data, status=status.HTTP_200_OK)
         
-class CaseCreateAPIView(generics.CreateAPIView):
-    """ יצירת תיק חדש מהטופס הראשוני """
-    queryset = Case.objects.all()
+from rest_framework import generics
+
+class CaseCreateAPIView(generics.ListCreateAPIView):
+    """
+    GET  /api/cases/   → يرجّع قائمة بكل التّيكيم (cases)
+    POST /api/cases/   → ينشئ תיק جديد
+    """
+    queryset = Case.objects.all().order_by("-created_at")
     serializer_class = CaseSerializer
+
     
 class CaseStatusUpdateAPIView(APIView):
     """
@@ -291,3 +299,35 @@ class AppointmentSuggestAPIView(APIView):
         appt.save()
 
         return Response(AppointmentSerializer(appt).data, status=200)
+    
+class LegalDomainViewSet(viewsets.ModelViewSet):
+    """
+    ניהול תחומים משפטיים + מאגר מידע לכל תחום.
+    GET    /api/domains/
+    POST   /api/domains/
+    PATCH  /api/domains/<id>/
+    DELETE /api/domains/<id>/
+    """
+    queryset = LegalDomain.objects.all().order_by("name")
+    serializer_class = LegalDomainSerializer
+    permission_classes = [permissions.AllowAny]  # אפשר להקשיח לסיסמת עו״ד
+
+# cases/views.py
+from rest_framework import viewsets
+from .models import BotMessage
+from .serializers import BotMessageSerializer
+
+class BotMessageViewSet(viewsets.ModelViewSet):
+    """
+    CRUD על הודעות צ'אט לכל תחום.
+    אפשר לסנן לפי ?domain=<id>
+    """
+    queryset = BotMessage.objects.all()
+    serializer_class = BotMessageSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        domain_id = self.request.query_params.get("domain")
+        if domain_id:
+            qs = qs.filter(domain_id=domain_id)
+        return qs
