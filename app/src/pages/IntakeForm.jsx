@@ -202,8 +202,7 @@ export default function IntakeForm() {
                       />
                     </div>
                   </div>
-
-                  <div className="sl-field">
+<div className="sl-field">
                     <div className="sl-label-row">
                       <label className="sl-label" htmlFor="client_id_number">
                         תעודת זהות <span>*</span>
@@ -215,6 +214,10 @@ export default function IntakeForm() {
                       <input
                         id="client_id_number"
                         type="text"
+                        inputMode="numeric"
+                        maxLength={9}
+                        pattern="\d{9}"
+                        title="נא להזין 9 ספרות"
                         name="client_id_number"
                         className="sl-input"
                         value={form.client_id_number}
@@ -242,16 +245,20 @@ export default function IntakeForm() {
                       <input
                         id="phone"
                         type="tel"
+                        inputMode="numeric"
+                        maxLength={10}
+                        pattern="05\d{8}"
+                        title="נא להזין מספר נייד תקין (10 ספרות)"
                         name="phone"
                         className="sl-input"
                         value={form.phone}
                         onChange={handleChange}
                         required
-                        placeholder="050-0000000"
+                        placeholder="0500000000"
                       />
                     </div>
                   </div>
-
+                  
                   <div className="sl-field">
                     <div className="sl-label-row">
                       <label className="sl-label" htmlFor="email">

@@ -572,3 +572,81 @@
           box-shadow: 0 30px 80px rgba(15, 23, 42, 1);
         }
       
+
+        .sl-contact-grid {
+          display: flex;
+          justify-content: center;
+          gap: 20px;
+          flex-wrap: wrap;
+          margin-top: 20px;
+        }
+
+        .sl-contact-card {
+          display: flex;
+          align-items: center;
+          background: #ffffff;
+          padding: 20px;
+          border-radius: 12px;
+          text-decoration: none;
+          color: #333;
+          width: 100%;
+          max-width: 300px;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+          border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .sl-contact-card:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .sl-icon-wrapper {
+          margin-left: 15px; /* Left margin because of RTL */
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .sl-text-wrapper h3 {
+          margin: 0 0 4px 0;
+          font-size: 1.1rem;
+          font-weight: 700;
+        }
+
+        .sl-text-wrapper span {
+          font-size: 0.9rem;
+          color: #666;
+          direction: ltr; /* Ensures phone/email display correctly */
+          display: block;
+        }
+
+        /* Specific Colors */
+        .sl-contact-card.whatsapp {
+          border-right: 5px solid #25D366;
+        }
+
+        .sl-contact-card.whatsapp .sl-icon-wrapper {
+          color: #25D366;
+        }
+
+        .sl-contact-card.email {
+          border-right: 5px solid #0072C6;
+        }
+
+        .sl-contact-card.email .sl-icon-wrapper {
+          color: #0072C6;
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 600px) {
+          .sl-contact-grid {
+            flex-direction: column;
+            align-items: center;
+          }
+          
+          .sl-contact-card {
+            width: 100%;
+            max-width: 100%;
+          }
+        }
