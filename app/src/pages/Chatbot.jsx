@@ -4,107 +4,6 @@ import "../styles/Chatbot.css";
 
 const API_BASE = "http://127.0.0.1:8000/api";
 
-/* ───────────── הגדרות השאלות ───────────── */
-
-const COMMON_QUESTIONS = [
-  {
-    key: "start_date",
-    text: "מתי התחלת לעבוד במקום העבודה הזה?",
-    type: "text",
-  },
-  {
-    key: "end_date",
-    text: "מתי סיימת לעבוד (אם סיימת)? אם עדיין עובד/ת – כתבו 'עדיין עובד/ת'.",
-    type: "text",
-  },
-  {
-    key: "last_salary",
-    text: "מה היה השכר האחרון שלך (ברוטו, בערך)?",
-    type: "text",
-  },
-];
-
-const CLAIM_SPECIFIC_QUESTIONS = {
-  dismissal: [
-    {
-      key: "had_hearing",
-      text: "האם נערך לך שימוע לפני הפיטורים? (כן/לא)",
-      type: "text",
-    },
-    {
-      key: "notice",
-      text: "כמה זמן מראש הודיעו לך על הפיטורים?",
-      type: "text",
-    },
-    {
-      key: "termination_letter",
-      text: "האם קיבלת מכתב פיטורים כתוב? (כן/לא)",
-      type: "text",
-    },
-  ],
-  salary: [
-    {
-      key: "missing_months",
-      text: "על איזה חודשים לא קיבלת שכר?",
-      type: "text",
-    },
-    {
-      key: "partial_or_none",
-      text: "האם חלק מהשכר שולם או שלא שולם בכלל? פרט/י.",
-      type: "text",
-    },
-  ],
-  overtime: [
-    {
-      key: "weekly_overtime",
-      text: "כמה שעות נוספות בערך עבדת בכל שבוע?",
-      type: "text",
-    },
-    {
-      key: "overtime_paid",
-      text: "האם קיבלת תשלום על שעות נוספות? (כן/לא, והסבר קצר)",
-      type: "text",
-    },
-  ],
-  rights: [
-    {
-      key: "missing_benefits",
-      text: "אילו זכויות סוציאליות לדעתך נפגעו? (פנסיה, הבראה, חופשה וכו')",
-      type: "text",
-    },
-  ],
-};
-
-/* ───────────── טיפים לפי שאלה ───────────── */
-
-const QUESTION_TIPS = {
-  start_date: "אין חובה לתאריך מדויק. אפשר לכתוב גם '01/2020' או 'תחילת 2020'.",
-  end_date:
-    "אם את/ה עדיין עובד/ת, אפשר לכתוב פשוט 'עדיין עובד/ת'. אם לא זוכר/ת את היום, מספיק חודש ושנה.",
-  last_salary:
-    "אפשר לכתוב הערכה, לדוגמה: 'בערך 6,000 ברוטו' או 'שכר שעתי 35 ₪'.",
-  missing_months:
-    "לדוגמה: 'ינואר–מרץ 2024' או 'יולי ואוגוסט 2023'. מספיק תיאור כללי.",
-  partial_or_none:
-    "לדוגמה: 'שולם חצי שכר בכל חודש' או 'לא שולם בכלל שלושה חודשים'.",
-  weekly_overtime:
-    "אם לא זוכר/ת בדיוק – אפשר לכתוב טווח, למשל 'בין 5 ל-10 שעות נוספות בשבוע'.",
-  overtime_paid:
-    "אפשר לציין גם אם השעות שולמו כשכר רגיל ולא כשעות נוספות לפי חוק.",
-  missing_benefits:
-    "לדוגמה: 'לא שולמה פנסיה', 'לא שולמו ימי חופשה', 'לא קיבלתי דמי הבראה' וכו'.",
-};
-
-/* ───────────── תשובות מוצעות (כפתורי קיצור) ───────────── */
-
-const SUGGESTED_ANSWERS = {
-  had_hearing: ["כן", "לא", "לא זוכר/ת"],
-  termination_letter: ["כן", "לא"],
-  overtime_paid: ["כן", "לא", "חלקית"],
-  end_date: ["עדיין עובד/ת", "לא זוכר/ת תאריך מדויק"],
-  partial_or_none: ["שולם חלקית", "לא שולם בכלל"],
-};
-
 /* ───────────── קומפוננטת הצ'אט ───────────── */
 
 export default function Chatbot() {
@@ -112,9 +11,9 @@ export default function Chatbot() {
   const navigate = useNavigate();
 
   const [caseData, setCaseData] = useState(null);
-  const [questions, setQuestions] = useState([]);
+  const [adminMessages, setAdminMessages] = useState([]); // הודעות/שאלות מהמנהל
   const [currentIdx, setCurrentIdx] = useState(0);
-  const [answers, setAnswers] = useState({});
+  const [answers, setAnswers] = useState({}); // { messageId: "answer text" }
   const [inputValue, setInputValue] = useState("");
   const [history, setHistory] = useState([]); // { from: 'bot'|'user', text }
   const [saving, setSaving] = useState(false);
@@ -133,13 +32,20 @@ export default function Chatbot() {
         const data = await res.json();
         setCaseData(data);
 
-        const claim = data.claim_type; // dismissal / salary / ...
-        const specific = CLAIM_SPECIFIC_QUESTIONS[claim] || [];
-        const allQuestions = [...COMMON_QUESTIONS, ...specific];
-        setQuestions(allQuestions);
-
         // 2. מנסים להבין מה ה-ID של התחום המשפטי בתיק
-        const domainId = data.legal_domain || data.domain || null;
+        let domainId = null;
+        if (data.legal_domain) {
+          if (typeof data.legal_domain === 'number') {
+            domainId = data.legal_domain;
+          } else if (data.legal_domain.id) {
+            domainId = data.legal_domain.id;
+          } else if (typeof data.legal_domain === 'string') {
+            domainId = parseInt(data.legal_domain);
+          }
+        } else if (data.domain) {
+          // Fallback for old data structure
+          domainId = typeof data.domain === 'number' ? data.domain : parseInt(data.domain);
+        }
 
         // 3. אם יש תחום – שולפים הודעות בוט מהשרת
         let scriptMessages = [];
@@ -159,28 +65,27 @@ export default function Chatbot() {
           } catch (e) {
             console.error("Failed to load bot messages", e);
           }
+        } else {
+          console.warn("No legal_domain found in case data. Bot messages will not be loaded.");
         }
 
-        // 4. בונים היסטוריה התחלתית: קודם הודעות מהתחום, ואז ברכת פתיחה ושאלה ראשונה
+        // 4. אם אין הודעות מהמנהל – הצג שגיאה
+        if (scriptMessages.length === 0) {
+          setError("לא נמצאו הודעות או שאלות עבור התחום הזה. אנא צור קשר עם המנהל.");
+          return;
+        }
+
+        // 5. שמירת ההודעות והצגת הראשונה
+        setAdminMessages(scriptMessages);
+
+        // 6. בונים היסטוריה התחלתית: רק את ההודעה הראשונה מהמנהל
         const initialHistory = [];
-
-        scriptMessages.forEach((m) => {
-          initialHistory.push({ from: "bot", text: m.text });
-        });
-
-        if (allQuestions.length > 0) {
-          initialHistory.push({
-            from: "bot",
-            text: `שלום ${
-              data.client_name || ""
-            }, נעבור עכשיו כמה שאלות קצרות כדי שנרכז את כל הפרטים החשובים לגבי ${describeClaimType(
-              claim
-            )}.`,
-          });
-          initialHistory.push({ from: "bot", text: allQuestions[0].text });
+        if (scriptMessages.length > 0) {
+          initialHistory.push({ from: "bot", text: scriptMessages[0].text });
         }
 
         setHistory(initialHistory);
+        setCurrentIdx(0);
       } catch (err) {
         console.error(err);
         setError(err.message);
@@ -201,22 +106,28 @@ export default function Chatbot() {
   /* ───────────── לוגיקת שליחת תשובה ───────────── */
 
   const sendAnswer = (overrideText) => {
-    const q = questions[currentIdx];
+    if (adminMessages.length === 0) return;
+    
+    const currentMessage = adminMessages[currentIdx];
     const raw = overrideText ?? inputValue.trim();
-    if (!q || !raw) return;
+    if (!currentMessage || !raw) return;
 
     const answerText = raw;
+    const messageId = currentMessage.id;
 
-    setAnswers((prev) => ({ ...prev, [q.key]: answerText }));
+    // שמירת התשובה לפי ID ההודעה
+    setAnswers((prev) => ({ ...prev, [messageId]: answerText }));
     setHistory((prev) => [...prev, { from: "user", text: answerText }]);
     setInputValue("");
 
+    // מעבר לשאלה הבאה (אם יש)
     const nextIdx = currentIdx + 1;
-    if (nextIdx < questions.length) {
-      const nextQ = questions[nextIdx];
-      setHistory((prev) => [...prev, { from: "bot", text: nextQ.text }]);
+    if (nextIdx < adminMessages.length) {
+      const nextMessage = adminMessages[nextIdx];
+      setHistory((prev) => [...prev, { from: "bot", text: nextMessage.text }]);
       setCurrentIdx(nextIdx);
     } else {
+      // סיימנו את כל השאלות
       setDone(true);
     }
   };
@@ -231,67 +142,32 @@ export default function Chatbot() {
   /* ───────────── בניית סיכום מסודר ───────────── */
 
   const buildSummary = () => {
-    if (!caseData) return "";
+    if (!caseData || adminMessages.length === 0) return "";
 
     const parts = [];
-    parts.push(
-      `העובד/ת ${caseData.client_name} תובע/ת בגין ${describeClaimType(
-        caseData.claim_type
-      )}.`
-    );
-
-    if (answers.start_date) {
-      parts.push(`תחילת העבודה: ${answers.start_date}.`);
-    }
-    if (answers.end_date) {
-      parts.push(`סיום העבודה: ${answers.end_date}.`);
-    }
-    if (answers.last_salary) {
-      parts.push(
-        `השכר האחרון (ברוטו, לפי הצהרת העובד/ת): ${answers.last_salary}.`
-      );
+    
+    // כותרת בסיסית
+    if (caseData.client_name) {
+      parts.push(`העובד/ת ${caseData.client_name}`);
+      
+      // אם יש תחום משפטי - מוסיפים אותו
+      if (caseData.legal_domain) {
+        const domainName = typeof caseData.legal_domain === 'object' 
+          ? caseData.legal_domain.name 
+          : 'תחום משפטי';
+        parts.push(`פונה בנושא: ${domainName}.`);
+      } else {
+        parts.push(`פונה בנושא משפטי.`);
+      }
     }
 
-    switch (caseData.claim_type) {
-      case "dismissal":
-        if (answers.had_hearing) {
-          parts.push(`שימוע לפני פיטורים: ${answers.had_hearing}.`);
-        }
-        if (answers.notice) {
-          parts.push(`הודעה מוקדמת לפיטורים: ${answers.notice}.`);
-        }
-        if (answers.termination_letter) {
-          parts.push(`מכתב פיטורים כתוב: ${answers.termination_letter}.`);
-        }
-        break;
-      case "salary":
-        if (answers.missing_months) {
-          parts.push(`חודשים ללא שכר: ${answers.missing_months}.`);
-        }
-        if (answers.partial_or_none) {
-          parts.push(`מידת התשלום בפועל: ${answers.partial_or_none}.`);
-        }
-        break;
-      case "overtime":
-        if (answers.weekly_overtime) {
-          parts.push(
-            `שעות נוספות שבועיות משוערות: ${answers.weekly_overtime}.`
-          );
-        }
-        if (answers.overtime_paid) {
-          parts.push(`תשלום על שעות נוספות: ${answers.overtime_paid}.`);
-        }
-        break;
-      case "rights":
-        if (answers.missing_benefits) {
-          parts.push(
-            `זכויות סוציאליות שלטענת העובד/ת לא כובדו: ${answers.missing_benefits}.`
-          );
-        }
-        break;
-      default:
-        break;
-    }
+    // הוספת כל השאלות והתשובות
+    adminMessages.forEach((msg, idx) => {
+      const answer = answers[msg.id];
+      if (answer) {
+        parts.push(`${msg.text} ${answer}.`);
+      }
+    });
 
     return parts.join(" ");
   };
@@ -342,13 +218,22 @@ export default function Chatbot() {
           <div className="error-card">
             <div className="error-icon">⚠️</div>
             <p className="error-text">שגיאה: {error}</p>
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="back-button"
+              style={{ marginTop: "1rem" }}
+            >
+              <span className="back-button-icon">←</span>
+              <span className="back-button-text">חזרה</span>
+            </button>
           </div>
         </main>
       </>
     );
   }
 
-  if (!caseData || questions.length === 0) {
+  if (!caseData || adminMessages.length === 0) {
     return (
       <>
         <main className="loading-page" dir="rtl">
@@ -361,15 +246,9 @@ export default function Chatbot() {
     );
   }
 
-  const currentQuestion = questions[currentIdx];
-  const currentTip = currentQuestion
-    ? QUESTION_TIPS[currentQuestion.key]
-    : null;
-  const currentSuggestions =
-    (currentQuestion && SUGGESTED_ANSWERS[currentQuestion.key]) || [];
-
+  const currentMessage = adminMessages[currentIdx];
   const progress = Math.round(
-    ((currentIdx + (done ? 1 : 0)) / questions.length) * 100
+    ((currentIdx + (done ? 1 : 0)) / adminMessages.length) * 100
   );
 
   return (
@@ -400,8 +279,8 @@ export default function Chatbot() {
             <div className="progress-container">
               <div className="progress-header">
                 <span className="progress-label">
-                  שאלה {Math.min(currentIdx + 1, questions.length)} מתוך{" "}
-                  {questions.length}
+                  שאלה {Math.min(currentIdx + 1, adminMessages.length)} מתוך{" "}
+                  {adminMessages.length}
                 </span>
                 <span className="progress-percent">{progress}% הושלמו</span>
               </div>
@@ -431,30 +310,6 @@ export default function Chatbot() {
 
               {!done ? (
                 <>
-                  {/* טיפ לשאלה הנוכחית */}
-                  {currentTip && (
-                    <div className="tip-box">
-                      <span className="tip-icon">💡</span>
-                      <strong> טיפ:</strong> {currentTip}
-                    </div>
-                  )}
-
-                  {/* תשובות מוצעות */}
-                  {currentSuggestions.length > 0 && (
-                    <div className="suggestions-container">
-                      {currentSuggestions.map((s, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => sendAnswer(s)}
-                          className="suggestion-btn"
-                        >
-                          {s}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
                   {/* שורת קלט משופרת */}
                   <div className="input-container">
                     <input
@@ -512,7 +367,11 @@ export default function Chatbot() {
               <div className="info-row">
                 <span className="info-label">סוג פנייה:</span>
                 <span className="info-value">
-                  {describeClaimType(caseData.claim_type)}
+                  {caseData.legal_domain 
+                    ? (typeof caseData.legal_domain === 'object' 
+                        ? caseData.legal_domain.name 
+                        : 'תחום משפטי')
+                    : (caseData.claim_type ? describeClaimType(caseData.claim_type) : '-')}
                 </span>
               </div>
               <div className="info-row">

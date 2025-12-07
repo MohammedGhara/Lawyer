@@ -4,6 +4,9 @@ from .models import Case, CaseDocument, Appointment, LegalDomain
 
 
 class CaseSerializer(serializers.ModelSerializer):
+    # Optional: Show domain name in read operations
+    legal_domain_name = serializers.CharField(source='legal_domain.name', read_only=True)
+
     class Meta:
         model = Case
         fields = [
@@ -13,6 +16,8 @@ class CaseSerializer(serializers.ModelSerializer):
             'phone',
             'email',
             'claim_type',
+            'legal_domain',
+            'legal_domain_name',  # Read-only field for convenience
             'start_date',
             'end_date',
             'last_salary',
@@ -22,7 +27,7 @@ class CaseSerializer(serializers.ModelSerializer):
             'status',
             'created_at',
         ]
-        read_only_fields = ['id', 'status', 'notes_from_chatbot', 'created_at']
+        read_only_fields = ['id', 'status', 'notes_from_chatbot', 'created_at', 'legal_domain_name']
 
 
 class CaseDocumentSerializer(serializers.ModelSerializer):

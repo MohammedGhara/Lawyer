@@ -28,8 +28,18 @@ class Case(models.Model):
     phone = models.CharField(max_length=30)
     email = models.EmailField()
 
-    # סוג הפנייה
-    claim_type = models.CharField(max_length=20, choices=CLAIM_TYPES)
+    # סוג הפנייה (לא חובה - ניתן להשתמש ב-legal_domain במקום)
+    claim_type = models.CharField(max_length=20, choices=CLAIM_TYPES, blank=True, null=True)
+
+    # תחום משפטי (קישור לתחום שהוגדר על ידי מנהל)
+    legal_domain = models.ForeignKey(
+        'LegalDomain',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='cases',
+        help_text="התחום המשפטי שנבחר בטופס - משמש לטעינת הודעות בוט"
+    )
 
     # נתונים שנאספים מהצ'אט
     start_date = models.DateField(null=True, blank=True)
@@ -108,7 +118,7 @@ class LegalDomain(models.Model):
     """
     name = models.CharField(max_length=200, unique=True)        # דיני עבודה, תאונות דרכים...
     description = models.TextField(blank=True)                  # תיאור קצר, אופציונלי
-    source_url = models.URLField(help_text="כתובת אתר של מאגר הידע")
+    source_url = models.URLField(max_length=1000, help_text="כתובת אתר של מאגר הידע")  # Increased to 1000 for long URLs
     is_active = models.BooleanField(default=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
