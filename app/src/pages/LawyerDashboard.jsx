@@ -209,22 +209,7 @@ export default function LawyerDashboard() {
               }}
               data-dashboard-animate
             >
-              <Link
-                to="/lawyer/domains"
-                style={{
-                  display: "inline-block",
-                  padding: "10px 22px",
-                  borderRadius: 9999,
-                  background:
-                    "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 50%, #1e40af 100%)",
-                  color: "white",
-                  fontWeight: 600,
-                  textDecoration: "none",
-                  boxShadow: "0 12px 30px rgba(15,23,42,0.6)",
-                }}
-              >
-                ניהול תחומים ומאגרים
-              </Link>
+              
             </div>
 
             <div className="sl-dashboard-filters" data-dashboard-animate>

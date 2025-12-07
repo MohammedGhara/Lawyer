@@ -1,10 +1,10 @@
-// app/src/pages/AdminDomainsPage.jsx
+// app/src/pages/AdminLogin.jsx
 import React, { useState, useEffect } from "react";
-import LegalDomainsAdmin from "./LegalDomainsAdmin.jsx";
+import AdminDashboard from "./AdminDashboard.jsx";
 
 const ADMIN_SECRET = "123456"; 
 
-export default function AdminDomainsPage() {
+export default function AdminLogin() {
   const [input, setInput] = useState("");
   const [error, setError] = useState("");
   const [isAuthorized, setIsAuthorized] = useState(false);
@@ -28,8 +28,34 @@ export default function AdminDomainsPage() {
 
   //  ניהול התחומים
   if (isAuthorized) {
-    return <LegalDomainsAdmin />;
-  }
+  return (
+    <div>
+      {/* logout for admin */}
+      <div style={{ padding: "16px", textAlign: "right" }}>
+        <button
+          onClick={() => {
+            localStorage.removeItem("smartlaw_admin");
+            window.location.reload();
+          }}
+          style={{
+            padding: "8px 16px",
+            background: "linear-gradient(135deg, #ef4444, #dc2626)",
+            border: "none",
+            borderRadius: 12,
+            color: "white",
+            fontWeight: "600",
+            cursor: "pointer",
+          }}
+        >
+          התנתקות מנהל
+        </button>
+      </div>
+
+      <AdminDashboard />
+    </div>
+  );
+}
+
 
   return (
     <main

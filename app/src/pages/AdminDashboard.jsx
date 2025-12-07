@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+// app/src/pages/AdminDashboard.jsx
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "../styles/LawyerDashboard.css";
 
 const API_URL = "http://127.0.0.1:8000/api";
@@ -162,7 +164,15 @@ const DOMAIN_TEMPLATES = [
   },
 ];
 
-export default function LegalDomainsAdmin() {
+export default function AdminDashboard() {
+  const navigate = useNavigate();
+
+  // زر لוג אוت للمנהל
+  const handleAdminLogout = () => {
+    localStorage.removeItem("smartlaw_admin");
+    navigate("/"); // يرجع لدף הבית
+  };
+
   const [domains, setDomains] = useState([]);
   const [form, setForm] = useState({
     id: null,
@@ -191,9 +201,7 @@ export default function LegalDomainsAdmin() {
       .then((res) => res.json())
       .then((data) =>
         Array.isArray(data)
-          ? setDomains(
-              data.sort((a, b) => a.name.localeCompare(b.name, "he"))
-            )
+          ? setDomains(data.sort((a, b) => a.name.localeCompare(b.name, "he")))
           : setDomains([])
       )
       .catch((err) => console.error("Failed to load domains", err));
@@ -275,13 +283,13 @@ export default function LegalDomainsAdmin() {
         });
       }
 
-        if (!res.ok) {
+      if (!res.ok) {
         let data = null;
         try {
           data = await res.json();
           console.error("Domain save error body:", data);
 
-          // 👇 כאן ההודעה היפה
+          // הודעה יפה במקרה שיש כבר תחום באותו שם
           if (
             res.status === 400 &&
             data &&
@@ -301,7 +309,6 @@ export default function LegalDomainsAdmin() {
 
         throw new Error("Save failed");
       }
-
 
       const saved = await res.json();
 
@@ -436,8 +443,35 @@ export default function LegalDomainsAdmin() {
   return (
     <main className="sl-dashboard-page" dir="rtl">
       <div className="sl-dashboard-container">
+        {/* 🔓 כפתור לוגאאוט למנהל */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            marginBottom: 12,
+          }}
+        >
+          <button
+            type="button"
+            onClick={handleAdminLogout}
+            style={{
+              padding: "8px 16px",
+              borderRadius: 9999,
+              border: "none",
+              background:
+                "linear-gradient(135deg, #ef4444, #dc2626)",
+              color: "#fff",
+              fontWeight: 600,
+              cursor: "pointer",
+              boxShadow: "0 6px 18px rgba(239,68,68,0.5)",
+            }}
+          >
+            התנתקות מנהל
+          </button>
+        </div>
+
         <h1 className="sl-dashboard-title">
-          דאשבורד תחומי ידע – ניהול מקורות מידע
+          דאשבורד המנהל – ניהול מקורות מידע
         </h1>
 
         {/* פס עליון – יצירת / עדכון תחום */}

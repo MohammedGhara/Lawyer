@@ -10,9 +10,8 @@ import LawyerDashboard from "./pages/LawyerDashboard.jsx";
 import AppointmentPicker from "./pages/AppointmentPicker.jsx";
 import LawyerLogin from "./pages/LawyerLogin.jsx";
 import RequireLawyer from "./components/RequireLawyer.jsx";
-
 // 🔐 דף המנהל עם סיסמה פנימית
-import AdminDomainsPage from "./pages/AdminDomainsPage.jsx";
+import AdminLogin from "./pages/AdminLogin.jsx";
 
 export default function App() {
   const navigate = useNavigate();
@@ -40,7 +39,7 @@ export default function App() {
         />
 
         {/* 🔐 דף מנהל תחומי ידע – עם סיסמה (לא קשור ל־RequireLawyer) */}
-        <Route path="/admin-domains" element={<AdminDomainsPage />} />
+        <Route path="/admin-domains" element={<AdminLogin />} />
 
         <Route
           path="/cases/:caseId/appointment"
