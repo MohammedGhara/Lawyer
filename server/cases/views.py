@@ -66,6 +66,12 @@ class CaseCreateAPIView(generics.ListCreateAPIView):
     """
     queryset = Case.objects.all().order_by("-created_at")
     serializer_class = CaseSerializer
+    
+    def get_serializer_context(self):
+        """Add request to serializer context for building absolute URLs"""
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
 
     
 class CaseStatusUpdateAPIView(APIView):
@@ -102,12 +108,24 @@ class CaseListAPIView(generics.ListAPIView):
     """ רשימת התיקים – לדשבורד עו״ד """
     queryset = Case.objects.all().order_by('-created_at')
     serializer_class = CaseSerializer
+    
+    def get_serializer_context(self):
+        """Add request to serializer context for building absolute URLs"""
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
 
 
 class CaseDetailAPIView(generics.RetrieveAPIView):
     """ שליפת תיק לפי ID """
     queryset = Case.objects.all()
     serializer_class = CaseSerializer
+    
+    def get_serializer_context(self):
+        """Add request to serializer context for building absolute URLs"""
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
 
 
 class CaseChatSummaryAPIView(APIView):
@@ -130,10 +148,22 @@ class CaseChatSummaryAPIView(APIView):
 
 
 class CaseDocumentUploadAPIView(APIView):
-    """ העלאת PDF לתיק קיים """
+    """ העלאת PDF לתיק קיים + שליפת מסמכים """
     parser_classes = [MultiPartParser, FormParser]
 
+    def get(self, request, case_id):
+        """ GET /api/cases/<case_id>/documents/ - שליפת כל המסמכים של תיק """
+        try:
+            case = Case.objects.get(pk=case_id)
+        except Case.DoesNotExist:
+            return Response({"detail": "Case not found"}, status=404)
+
+        documents = CaseDocument.objects.filter(case=case).order_by('-uploaded_at')
+        serializer = CaseDocumentSerializer(documents, many=True, context={'request': request})
+        return Response(serializer.data, status=200)
+
     def post(self, request, case_id):
+        """ POST /api/cases/<case_id>/documents/ - העלאת מסמכים """
         try:
             case = Case.objects.get(pk=case_id)
         except Case.DoesNotExist:
@@ -166,8 +196,28 @@ class CaseDocumentUploadAPIView(APIView):
                 )
             )
 
-        serializer = CaseDocumentSerializer(created_docs, many=True)
+        serializer = CaseDocumentSerializer(created_docs, many=True, context={'request': request})
         return Response(serializer.data, status=201)
+
+
+class CaseDocumentDeleteAPIView(APIView):
+    """ מחיקת מסמך """
+    
+    def delete(self, request, document_id):
+        """ DELETE /api/documents/<document_id>/ - מחיקת מסמך """
+        try:
+            document = CaseDocument.objects.get(pk=document_id)
+        except CaseDocument.DoesNotExist:
+            return Response({"detail": "Document not found"}, status=404)
+        
+        # Delete the file from storage
+        if document.file:
+            document.file.delete(save=False)
+        
+        # Delete the document record
+        document.delete()
+        
+        return Response({"detail": "Document deleted successfully"}, status=200)
 
 
 class CaseAppointmentsAPIView(APIView):

@@ -58,6 +58,7 @@ export default function Home({ onStartIntake }) {
     { label: "סטטוס תיק בסיום", value: "מוכן לסקירה" },
   ];
 
+
   return (
     <>
       <main className="sl-home-root" dir="rtl">

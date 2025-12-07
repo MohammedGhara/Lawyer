@@ -88,6 +88,30 @@ export default function LawyerDashboard() {
     }
   }
 
+  async function deleteDocument(documentId, caseId) {
+    if (!window.confirm("האם אתה בטוח שברצונך למחוק את המסמך הזה?")) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/documents/${documentId}/`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.detail || "שגיאה במחיקת המסמך");
+      }
+
+      // Reload all data to refresh the documents list
+      await loadAllData();
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "שגיאה במחיקת המסמך");
+    }
+  }
+
   async function approveAppt(id) {
     try {
       await fetch(`${API_BASE}/appointments/${id}/approve/`, {
@@ -282,6 +306,7 @@ export default function LawyerDashboard() {
                     <th>אימייל</th>
                     <th>סוג תביעה</th>
                     <th>סטטוס תיק</th>
+                    <th>מסמכים</th>
                     <th>סיכום מה־Chatbot</th>
                     <th>פגישה</th>
                   </tr>
@@ -298,7 +323,9 @@ export default function LawyerDashboard() {
                         <td>{c.client_name}</td>
                         <td>{c.phone}</td>
                         <td>{c.email}</td>
-                        <td>{describeClaimType(c.claim_type)}</td>
+                        <td>
+                          {c.legal_domain_name || describeClaimType(c.claim_type) || "—"}
+                        </td>
 
                         <td>
                           <div className="sl-status-container">
@@ -344,6 +371,67 @@ export default function LawyerDashboard() {
                               </button>
                             </div>
                           </div>
+                        </td>
+
+                        <td className="sl-documents-cell">
+                          {c.documents && c.documents.length > 0 ? (
+                            <div className="sl-documents-container">
+                              <div className="sl-documents-header">
+                                <span className="sl-documents-icon">📎</span>
+                                <span className="sl-documents-count">
+                                  {c.documents.length} מסמכים
+                                </span>
+                              </div>
+                              <div className="sl-documents-grid">
+                                {c.documents.map((doc) => (
+                                  <div
+                                    key={doc.id}
+                                    className="sl-document-card-wrapper"
+                                  >
+                                    <a
+                                      href={doc.file_url || `http://127.0.0.1:8000${doc.file}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="sl-document-card"
+                                      title={getDocumentTypeLabel(doc.document_type)}
+                                    >
+                                      <div className="sl-document-icon">
+                                        {getDocumentIcon(doc.document_type)}
+                                      </div>
+                                      <div className="sl-document-info">
+                                        <div className="sl-document-name">
+                                          {getFileName(doc.file)}
+                                        </div>
+                                        <div className="sl-document-type">
+                                          {getDocumentTypeLabel(doc.document_type)}
+                                        </div>
+                                      </div>
+                                      <div className="sl-document-download">
+                                        ⬇️
+                                      </div>
+                                    </a>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        deleteDocument(doc.id, c.id);
+                                      }}
+                                      className="sl-document-delete-btn"
+                                      title="מחק מסמך"
+                                    >
+                                      🗑️
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="sl-documents-empty">
+                              <span className="sl-documents-empty-icon">📄</span>
+                              <span>אין מסמכים</span>
+                            </div>
+                          )}
                         </td>
 
                         <td>
@@ -476,4 +564,42 @@ function describeStatus(value) {
     default:
       return value || "";
   }
+}
+
+function getDocumentTypeLabel(type) {
+  switch (type) {
+    case "contract":
+      return "חוזה עבודה";
+    case "pay_slip":
+      return "תלוש שכר";
+    case "termination_letter":
+      return "מכתב פיטורים";
+    case "other":
+      return "מסמך אחר";
+    default:
+      return type || "מסמך";
+  }
+}
+
+function getDocumentIcon(type) {
+  switch (type) {
+    case "contract":
+      return "📋";
+    case "pay_slip":
+      return "🧾";
+    case "termination_letter":
+      return "✉️";
+    case "other":
+      return "📎";
+    default:
+      return "📄";
+  }
+}
+
+function getFileName(filePath) {
+  if (!filePath) return "מסמך";
+  const parts = filePath.split("/");
+  const fileName = parts[parts.length - 1];
+  // Remove Hebrew characters if they exist in the path, or just return the filename
+  return fileName.length > 30 ? fileName.substring(0, 30) + "..." : fileName;
 }
