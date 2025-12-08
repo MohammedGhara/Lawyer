@@ -378,12 +378,13 @@
         }
 
         .chat-messages {
-          flex: 1;
-          overflow-y: auto;
-          margin-bottom: 1.5rem;
-          padding: 0.5rem;
-          scroll-behavior: smooth;
-        }
+        height: 420px;            /* ✨ צ'אט בגובה קבוע */
+        overflow-y: auto;         /* מאפשר גלילה */
+        margin-bottom: 1.5rem;
+        padding: 0.5rem;
+        scroll-behavior: smooth;
+      }
+
 
         .chat-messages::-webkit-scrollbar {
           width: 8px;
