@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import permissions
 from rest_framework.decorators import api_view
 from rest_framework import viewsets
+from django.core.mail import send_mail
 
 from .models import Case, CaseDocument, Appointment, LegalDomain
 from .serializers import (
@@ -290,12 +291,33 @@ class AppointmentApproveAPIView(APIView):
                 )
             appt.approved_datetime = dt
         else:
-            # אם לא התקבל תאריך חדש – נאשר לפי הזמן שביקש העובד
             if appt.requested_datetime:
                 appt.approved_datetime = appt.requested_datetime
 
         appt.status = "approved"
         appt.save()
+
+        # ✅ שליחת אימייל מקצועי
+        send_mail(
+            "אישור פגישה – משרד עורכי דין",
+            f"""לכבוד הלקוח/ה,
+
+ברצוננו להודיעך כי הפגישה אשר נקבעה במסגרת הטיפול בתיקך
+אושרה על ידי עורך הדין.
+
+פרטי הפגישה:
+תאריך ושעה: {appt.approved_datetime}
+
+במידה ויש צורך בעדכון נוסף או בשאלה כלשהי,
+נשמח לעמוד לרשותך.
+
+בברכה,
+משרד עורכי דין
+""",
+            None,
+            [appt.case.email],
+            fail_silently=False,
+        )
 
         return Response(AppointmentSerializer(appt).data, status=200)
 
@@ -303,7 +325,6 @@ class AppointmentApproveAPIView(APIView):
 class AppointmentRejectAPIView(APIView):
     """
     עו״ד דוחה פגישה (בלי מועד חדש).
-    אם את לא משתמשת בזה – זה פשוט קובע סטטוס rejected.
     """
 
     def post(self, request, appointment_id):
@@ -314,6 +335,24 @@ class AppointmentRejectAPIView(APIView):
 
         appt.status = "rejected"
         appt.save()
+
+        # ✅ שליחת אימייל מקצועי
+        send_mail(
+            "עדכון בנוגע לבקשת הפגישה – משרד עורכי דין",
+            """לכבוד הלקוח/ה,
+
+לאחר בחינת בקשתך, לצערנו לא ניתן לאשר את מועד הפגישה המבוקש.
+ניתן להגיש בקשה חדשה למועד אחר דרך המערכת בכל עת.
+
+לכל שאלה נוספת, אנו עומדים לרשותך.
+
+בברכה,
+משרד עורכי דין
+""",
+            None,
+            [appt.case.email],
+            fail_silently=False,
+        )
 
         return Response(AppointmentSerializer(appt).data, status=200)
 
@@ -348,7 +387,28 @@ class AppointmentSuggestAPIView(APIView):
         appt.approved_datetime = dt
         appt.save()
 
+        # ✅ שליחת אימייל מקצועי
+        send_mail(
+            "הצעת מועד חדש לפגישה – משרד עורכי דין",
+            f"""לכבוד הלקוח/ה,
+
+בהמשך לבקשתך לקביעת פגישה, עורך הדין הציע מועד חדש לפגישה.
+
+פרטי המועד המוצע:
+תאריך ושעה: {dt}
+
+אנא התחבר/י למערכת על מנת לאשר או לדחות את המועד.
+
+בברכה,
+משרד עורכי דין
+""",
+            None,
+            [appt.case.email],
+            fail_silently=False,
+        )
+
         return Response(AppointmentSerializer(appt).data, status=200)
+
     
 class LegalDomainViewSet(viewsets.ModelViewSet):
     """
