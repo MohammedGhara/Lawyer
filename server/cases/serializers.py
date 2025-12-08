@@ -2,8 +2,31 @@ from rest_framework import serializers
 from .models import Case, CaseDocument, Appointment, LegalDomain
 
 
+class CaseDocumentSerializer(serializers.ModelSerializer):
+    file_url = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = CaseDocument
+        fields = ['id', 'case', 'file', 'file_url', 'document_type', 'uploaded_at']
+        read_only_fields = ['id', 'uploaded_at', 'file_url']
+    
+    def get_file_url(self, obj):
+        """Return the full URL for the document file"""
+        if obj.file:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.file.url)
+            # Fallback if no request context
+            return f"http://127.0.0.1:8000{obj.file.url}"
+        return None
+
 
 class CaseSerializer(serializers.ModelSerializer):
+    # Optional: Show domain name in read operations
+    legal_domain_name = serializers.CharField(source='legal_domain.name', read_only=True)
+    # Include documents in the case serializer
+    documents = CaseDocumentSerializer(many=True, read_only=True)
+
     class Meta:
         model = Case
         fields = [
@@ -13,6 +36,8 @@ class CaseSerializer(serializers.ModelSerializer):
             'phone',
             'email',
             'claim_type',
+            'legal_domain',
+            'legal_domain_name',  # Read-only field for convenience
             'start_date',
             'end_date',
             'last_salary',
@@ -21,15 +46,9 @@ class CaseSerializer(serializers.ModelSerializer):
             'notes_from_chatbot',
             'status',
             'created_at',
+            'documents',  # Include documents
         ]
-        read_only_fields = ['id', 'status', 'notes_from_chatbot', 'created_at']
-
-
-class CaseDocumentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CaseDocument
-        fields = ['id', 'case', 'file', 'document_type', 'uploaded_at']
-        read_only_fields = ['id', 'uploaded_at']
+        read_only_fields = ['id', 'status', 'notes_from_chatbot', 'created_at', 'legal_domain_name', 'documents']
 
 
 class AppointmentSerializer(serializers.ModelSerializer):

@@ -7,6 +7,8 @@ from django.shortcuts import get_object_or_404
 from rest_framework import permissions
 from rest_framework.decorators import api_view
 from rest_framework import viewsets
+from django.core.mail import send_mail
+from .ai_service import ask_ai
 
 from .models import Case, CaseDocument, Appointment, LegalDomain
 from .serializers import (
@@ -66,6 +68,12 @@ class CaseCreateAPIView(generics.ListCreateAPIView):
     """
     queryset = Case.objects.all().order_by("-created_at")
     serializer_class = CaseSerializer
+    
+    def get_serializer_context(self):
+        """Add request to serializer context for building absolute URLs"""
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
 
     
 class CaseStatusUpdateAPIView(APIView):
@@ -102,12 +110,24 @@ class CaseListAPIView(generics.ListAPIView):
     """ רשימת התיקים – לדשבורד עו״ד """
     queryset = Case.objects.all().order_by('-created_at')
     serializer_class = CaseSerializer
+    
+    def get_serializer_context(self):
+        """Add request to serializer context for building absolute URLs"""
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
 
 
 class CaseDetailAPIView(generics.RetrieveAPIView):
     """ שליפת תיק לפי ID """
     queryset = Case.objects.all()
     serializer_class = CaseSerializer
+    
+    def get_serializer_context(self):
+        """Add request to serializer context for building absolute URLs"""
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
 
 
 class CaseChatSummaryAPIView(APIView):
@@ -130,10 +150,22 @@ class CaseChatSummaryAPIView(APIView):
 
 
 class CaseDocumentUploadAPIView(APIView):
-    """ העלאת PDF לתיק קיים """
+    """ העלאת PDF לתיק קיים + שליפת מסמכים """
     parser_classes = [MultiPartParser, FormParser]
 
+    def get(self, request, case_id):
+        """ GET /api/cases/<case_id>/documents/ - שליפת כל המסמכים של תיק """
+        try:
+            case = Case.objects.get(pk=case_id)
+        except Case.DoesNotExist:
+            return Response({"detail": "Case not found"}, status=404)
+
+        documents = CaseDocument.objects.filter(case=case).order_by('-uploaded_at')
+        serializer = CaseDocumentSerializer(documents, many=True, context={'request': request})
+        return Response(serializer.data, status=200)
+
     def post(self, request, case_id):
+        """ POST /api/cases/<case_id>/documents/ - העלאת מסמכים """
         try:
             case = Case.objects.get(pk=case_id)
         except Case.DoesNotExist:
@@ -166,8 +198,28 @@ class CaseDocumentUploadAPIView(APIView):
                 )
             )
 
-        serializer = CaseDocumentSerializer(created_docs, many=True)
+        serializer = CaseDocumentSerializer(created_docs, many=True, context={'request': request})
         return Response(serializer.data, status=201)
+
+
+class CaseDocumentDeleteAPIView(APIView):
+    """ מחיקת מסמך """
+    
+    def delete(self, request, document_id):
+        """ DELETE /api/documents/<document_id>/ - מחיקת מסמך """
+        try:
+            document = CaseDocument.objects.get(pk=document_id)
+        except CaseDocument.DoesNotExist:
+            return Response({"detail": "Document not found"}, status=404)
+        
+        # Delete the file from storage
+        if document.file:
+            document.file.delete(save=False)
+        
+        # Delete the document record
+        document.delete()
+        
+        return Response({"detail": "Document deleted successfully"}, status=200)
 
 
 class CaseAppointmentsAPIView(APIView):
@@ -240,12 +292,33 @@ class AppointmentApproveAPIView(APIView):
                 )
             appt.approved_datetime = dt
         else:
-            # אם לא התקבל תאריך חדש – נאשר לפי הזמן שביקש העובד
             if appt.requested_datetime:
                 appt.approved_datetime = appt.requested_datetime
 
         appt.status = "approved"
         appt.save()
+
+        # ✅ שליחת אימייל מקצועי
+        send_mail(
+            "אישור פגישה – משרד עורכי דין",
+            f"""לכבוד הלקוח/ה,
+
+ברצוננו להודיעך כי הפגישה אשר נקבעה במסגרת הטיפול בתיקך
+אושרה על ידי עורך הדין.
+
+פרטי הפגישה:
+תאריך ושעה: {appt.approved_datetime}
+
+במידה ויש צורך בעדכון נוסף או בשאלה כלשהי,
+נשמח לעמוד לרשותך.
+
+בברכה,
+משרד עורכי דין
+""",
+            None,
+            [appt.case.email],
+            fail_silently=False,
+        )
 
         return Response(AppointmentSerializer(appt).data, status=200)
 
@@ -253,7 +326,6 @@ class AppointmentApproveAPIView(APIView):
 class AppointmentRejectAPIView(APIView):
     """
     עו״ד דוחה פגישה (בלי מועד חדש).
-    אם את לא משתמשת בזה – זה פשוט קובע סטטוס rejected.
     """
 
     def post(self, request, appointment_id):
@@ -264,6 +336,24 @@ class AppointmentRejectAPIView(APIView):
 
         appt.status = "rejected"
         appt.save()
+
+        # ✅ שליחת אימייל מקצועי
+        send_mail(
+            "עדכון בנוגע לבקשת הפגישה – משרד עורכי דין",
+            """לכבוד הלקוח/ה,
+
+לאחר בחינת בקשתך, לצערנו לא ניתן לאשר את מועד הפגישה המבוקש.
+ניתן להגיש בקשה חדשה למועד אחר דרך המערכת בכל עת.
+
+לכל שאלה נוספת, אנו עומדים לרשותך.
+
+בברכה,
+משרד עורכי דין
+""",
+            None,
+            [appt.case.email],
+            fail_silently=False,
+        )
 
         return Response(AppointmentSerializer(appt).data, status=200)
 
@@ -298,7 +388,28 @@ class AppointmentSuggestAPIView(APIView):
         appt.approved_datetime = dt
         appt.save()
 
+        # ✅ שליחת אימייל מקצועי
+        send_mail(
+            "הצעת מועד חדש לפגישה – משרד עורכי דין",
+            f"""לכבוד הלקוח/ה,
+
+בהמשך לבקשתך לקביעת פגישה, עורך הדין הציע מועד חדש לפגישה.
+
+פרטי המועד המוצע:
+תאריך ושעה: {dt}
+
+אנא התחבר/י למערכת על מנת לאשר או לדחות את המועד.
+
+בברכה,
+משרד עורכי דין
+""",
+            None,
+            [appt.case.email],
+            fail_silently=False,
+        )
+
         return Response(AppointmentSerializer(appt).data, status=200)
+
     
 class LegalDomainViewSet(viewsets.ModelViewSet):
     """
@@ -331,3 +442,23 @@ class BotMessageViewSet(viewsets.ModelViewSet):
         if domain_id:
             qs = qs.filter(domain_id=domain_id)
         return qs
+
+
+class ChatbotAPIView(APIView):
+    def post(self, request):
+        messages = request.data.get("messages")
+
+        if not messages:
+            return Response(
+                {"detail": "messages is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            result = ask_ai(messages) 
+            return Response(result, status=200)
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=500
+            )

@@ -2,13 +2,6 @@ import React, { useState, useEffect } from "react";
 import '../styles/IntakeForm.css';
 import { useNavigate } from "react-router-dom";
 
-const CLAIM_TYPES = [
-  { value: "dismissal", label: "פיטורים שלא כדין" },
-  { value: "salary", label: "אי תשלום שכר / הלנת שכר" },
-  { value: "overtime", label: "שעות נוספות" },
-  { value: "rights", label: "פגיעה בזכויות סוציאליות" },
-];
-
 const API_BASE = "http://127.0.0.1:8000/api";
 
 export default function IntakeForm() {
@@ -19,8 +12,12 @@ export default function IntakeForm() {
     client_id_number: "",
     phone: "",
     email: "",
-    claim_type: "",
+    legal_domain: "", // Changed from claim_type to legal_domain
+    claim_type: "", // Keep for backward compatibility (optional)
   });
+
+  const [domains, setDomains] = useState([]); // Active legal domains from admin
+  const [loadingDomains, setLoadingDomains] = useState(true);
 
   const [contractFile, setContractFile] = useState(null);
   const [payslips, setPayslips] = useState([]);
@@ -29,6 +26,31 @@ export default function IntakeForm() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
+
+  // Load active legal domains from admin
+  useEffect(() => {
+    async function fetchDomains() {
+      try {
+        setLoadingDomains(true);
+        const res = await fetch(`${API_BASE}/domains/`);
+        if (!res.ok) throw new Error("שגיאה בטעינת התחומים");
+        const data = await res.json();
+        // Filter only active domains and sort by name
+        const activeDomains = Array.isArray(data)
+          ? data.filter(d => d.is_active).sort((a, b) => 
+              a.name.localeCompare(b.name, "he")
+            )
+          : [];
+        setDomains(activeDomains);
+      } catch (err) {
+        console.error("Failed to load domains", err);
+        setError("שגיאה בטעינת רשימת התחומים. נסה/י לרענן את הדף.");
+      } finally {
+        setLoadingDomains(false);
+      }
+    }
+    fetchDomains();
+  }, []);
 
   // Smooth scroll animations on mount
   useEffect(() => {
@@ -62,13 +84,26 @@ export default function IntakeForm() {
     setError(null);
 
     try {
+      // Validate that legal_domain is selected
+      if (!form.legal_domain) {
+        setError("יש לבחור תחום משפטי");
+        setLoading(false);
+        return;
+      }
+
+      // Prepare payload - send legal_domain, keep claim_type for backward compatibility
+      const payload = {
+        ...form,
+        legal_domain: parseInt(form.legal_domain), // Convert to number for ForeignKey
+      };
+
       // 1) יצירת תיק חדש
       const caseResponse = await fetch(`${API_BASE}/cases/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
 
       if (!caseResponse.ok) {
@@ -113,6 +148,7 @@ export default function IntakeForm() {
         client_id_number: "",
         phone: "",
         email: "",
+        legal_domain: "",
         claim_type: "",
       });
       setContractFile(null);
@@ -287,40 +323,51 @@ export default function IntakeForm() {
 
               <div className="sl-intake-divider" />
 
-              {/* CLAIM TYPE */}
+              {/* LEGAL DOMAIN SELECTION */}
               <section>
                 <h2 className="sl-intake-section-title">סוג הפנייה</h2>
                 <p className="sl-intake-section-sub">
-                  בחירה ראשונית בלבד – ניתן לפרט יותר בשיחה עם העוזר החכם.
+                  בחרו את התחום המשפטי הרלוונטי למקרה שלכם – העוזר החכם יעבור על הפרטים בהתאם.
                 </p>
 
                 <div className="sl-field">
                   <div className="sl-label-row">
-                    <label className="sl-label" htmlFor="claim_type">
-                      מה סוג הבעיה העיקרית? <span>*</span>
+                    <label className="sl-label" htmlFor="legal_domain">
+                      מה התחום המשפטי הרלוונטי? <span>*</span>
                     </label>
                     <span className="sl-label-hint">
-                      בחרי את האפשרות הקרובה ביותר למקרה שלך
+                      בחרו את התחום הקרוב ביותר למקרה שלכם
                     </span>
                   </div>
-                  <div className={`sl-input-wrapper ${form.claim_type ? 'sl-select-wrapper-has-value' : ''}`}>
-                    <span className="sl-input-icon">⚖️</span>
-                    <select
-                      id="claim_type"
-                      name="claim_type"
-                      className="sl-select"
-                      value={form.claim_type}
-                      onChange={handleChange}
-                      required
-                    >
-                      <option value="">בחרו את סוג הפנייה</option>
-                      {CLAIM_TYPES.map((c) => (
-                        <option key={c.value} value={c.value}>
-                          {c.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  {loadingDomains ? (
+                    <div style={{ padding: "1rem", textAlign: "center", color: "#9ca3af" }}>
+                      טוען תחומים...
+                    </div>
+                  ) : domains.length === 0 ? (
+                    <div style={{ padding: "1rem", textAlign: "center", color: "#f97373" }}>
+                      אין תחומים זמינים כרגע. אנא פנו למנהל המערכת.
+                    </div>
+                  ) : (
+                    <div className={`sl-input-wrapper ${form.legal_domain ? 'sl-select-wrapper-has-value' : ''}`}>
+                      <span className="sl-input-icon">⚖️</span>
+                      <select
+                        id="legal_domain"
+                        name="legal_domain"
+                        className="sl-select"
+                        value={form.legal_domain}
+                        onChange={handleChange}
+                        required
+                      >
+                        <option value="">בחרו את התחום המשפטי</option>
+                        {domains.map((domain) => (
+                          <option key={domain.id} value={domain.id}>
+                            {domain.name}
+                            {domain.description ? ` - ${domain.description}` : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
               </section>
 

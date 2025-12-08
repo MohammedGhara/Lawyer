@@ -260,10 +260,18 @@ export default function AdminDashboard() {
       return;
     }
 
+    // Validate URL format
+    try {
+      new URL(form.source_url);
+    } catch (urlError) {
+      alert("כתובת ה-URL אינה תקינה. אנא בדקו את הכתובת שוב.");
+      return;
+    }
+
     const payload = {
-      name: form.name,
-      description: form.description,
-      source_url: form.source_url,
+      name: form.name.trim(),
+      description: (form.description || "").trim(),
+      source_url: form.source_url.trim(),
       is_active: form.is_active,
     };
 
@@ -285,28 +293,68 @@ export default function AdminDashboard() {
 
       if (!res.ok) {
         let data = null;
+        let errorMessage = "אירעה שגיאה בשמירת התחום. אנא בדקי את הנתונים ונסי שוב.";
+        
         try {
           data = await res.json();
           console.error("Domain save error body:", data);
+          console.error("Response status:", res.status);
 
-          // הודעה יפה במקרה שיש כבר תחום באותו שם
-          if (
-            res.status === 400 &&
-            data &&
-            data.name &&
-            Array.isArray(data.name) &&
-            typeof data.name[0] === "string" &&
-            data.name[0].includes("already exists")
-          ) {
-            alert("התחום הזה כבר קיים במערכת, אי אפשר להוסיף אותו פעמיים.");
-          } else {
-            alert("אירעה שגיאה בשמירת התחום. אנא בדקי את הנתונים ונסי שוב.");
+          // Extract detailed error message
+          if (data) {
+            // Handle field-specific errors
+            if (data.name) {
+              if (Array.isArray(data.name)) {
+                const nameError = data.name[0];
+                if (typeof nameError === "string") {
+                  if (nameError.includes("already exists") || nameError.includes("unique")) {
+                    errorMessage = "התחום הזה כבר קיים במערכת, אי אפשר להוסיף אותו פעמיים.";
+                  } else {
+                    errorMessage = `שגיאה בשם התחום: ${nameError}`;
+                  }
+                }
+              }
+            }
+            
+            // Handle URL validation errors
+            if (data.source_url) {
+              if (Array.isArray(data.source_url)) {
+                errorMessage = `שגיאה בכתובת URL: ${data.source_url[0]}`;
+              }
+            }
+            
+            // Handle non-field errors
+            if (data.detail) {
+              errorMessage = data.detail;
+            } else if (data.error) {
+              errorMessage = data.error;
+            } else if (data.message) {
+              errorMessage = data.message;
+            } else if (data.non_field_errors) {
+              errorMessage = Array.isArray(data.non_field_errors) 
+                ? data.non_field_errors[0] 
+                : data.non_field_errors;
+            }
+            
+            // Show all field errors if available
+            const fieldErrors = Object.entries(data)
+              .filter(([key]) => !['detail', 'error', 'message', 'non_field_errors'].includes(key))
+              .filter(([, value]) => Array.isArray(value) && value.length > 0);
+            
+            if (fieldErrors.length > 0) {
+              const allErrors = fieldErrors.map(([field, errors]) => 
+                `${field}: ${Array.isArray(errors) ? errors[0] : errors}`
+              ).join('\n');
+              console.error("Field errors:", allErrors);
+              errorMessage += `\n\nפרטים:\n${allErrors}`;
+            }
           }
         } catch (e) {
           console.error("Domain save error (no JSON)", e);
-          alert("אירעה שגיאה בשמירת התחום.");
+          errorMessage = `שגיאת שרת: ${res.status} ${res.statusText}`;
         }
 
+        alert(errorMessage);
         throw new Error("Save failed");
       }
 
@@ -379,7 +427,7 @@ export default function AdminDashboard() {
   }
 
   async function handleMessageDelete(id) {
-    if (!window.confirm("למחוק את ההודעה?")) return;
+    if (!window.confirm("למחוק את השאלה?")) return;
     await fetch(`${API_URL}/bot-messages/${id}/`, { method: "DELETE" });
     setMessages((prev) => prev.filter((m) => m.id !== id));
     if (messageForm.id === id) {
@@ -395,7 +443,7 @@ export default function AdminDashboard() {
       return;
     }
     if (!messageForm.text.trim()) {
-      alert("אי אפשר לשמור הודעה ריקה");
+      alert("אי אפשר לשמור שאלה ריקה");
       return;
     }
 
@@ -436,7 +484,7 @@ export default function AdminDashboard() {
       resetMessageForm();
     } catch (err) {
       console.error(err);
-      alert("שגיאה בשמירת ההודעה");
+      alert("שגיאה בשמירת השאלה");
     }
   }
 
@@ -628,7 +676,7 @@ export default function AdminDashboard() {
                 }}
               >
                 <span style={{ fontSize: 22 }}>💬</span>
-                <span>הודעות צ'אט עבור: {selectedDomainName}</span>
+                <span>שאלות צ'אט עבור: {selectedDomainName}</span>
               </div>
 
               {/* טופס יצירת / עדכון הודעה */}
@@ -681,7 +729,7 @@ export default function AdminDashboard() {
                       marginBottom: 4,
                     }}
                   >
-                    תוכן ההודעה
+                    תוכן השאלה
                   </div>
                   <textarea
                     rows={3}
@@ -766,7 +814,7 @@ export default function AdminDashboard() {
                       className="sl-status-btn sl-status-btn-review"
                       style={{ whiteSpace: "nowrap" }}
                     >
-                      {messageForm.id ? "עדכון הודעה" : "הוספת הודעה"}
+                      {messageForm.id ? "עדכון שאלה" : "הוספת שאלה"}
                     </button>
                     {messageForm.id && (
                       <button
@@ -833,7 +881,7 @@ export default function AdminDashboard() {
                         colSpan={5}
                         style={{ textAlign: "center", padding: 12 }}
                       >
-                        אין הודעות מוגדרות עדיין לתחום זה
+                        אין שאלות מוגדרות עדיין לתחום זה
                       </td>
                     </tr>
                   )}

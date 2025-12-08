@@ -1,5 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter   # 👈 مهم
+from .views import ChatbotAPIView
 
 from .views import (
     CaseCreateAPIView,
@@ -7,6 +8,7 @@ from .views import (
     CaseDetailAPIView,
     CaseChatSummaryAPIView,
     CaseDocumentUploadAPIView,
+    CaseDocumentDeleteAPIView,
     CaseAppointmentsAPIView,
 
     AppointmentCreateAPIView,
@@ -31,6 +33,8 @@ urlpatterns = [
     path('cases/<int:pk>/', CaseDetailAPIView.as_view(), name='case-detail'),
     path('cases/<int:case_id>/chat/', CaseChatSummaryAPIView.as_view(), name='case-chat-summary'),
     path('cases/<int:case_id>/documents/', CaseDocumentUploadAPIView.as_view(), name='case-documents-upload'),
+    path('documents/<int:document_id>/', CaseDocumentDeleteAPIView.as_view(), name='case-document-delete'),
+    path("chatbot/", ChatbotAPIView.as_view(), name="chatbot"),
 
     path('cases/<int:pk>/status/', CaseStatusUpdateAPIView.as_view(), name='case-status-update'),
 
