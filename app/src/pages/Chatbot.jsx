@@ -15,7 +15,9 @@ export default function Chatbot() {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState({}); // { messageId: "answer text" }
   const [inputValue, setInputValue] = useState("");
-  const [history, setHistory] = useState([]); // { from: 'bot'|'user', text }
+  const [history, setHistory] = useState([]); // צ'אט מלא
+const [aiOptions, setAiOptions] = useState([]); // כפתורי בחירה מה-AI
+const [useAI, setUseAI] = useState(false);
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState(null);
@@ -106,6 +108,7 @@ export default function Chatbot() {
   /* ───────────── לוגיקת שליחת תשובה ───────────── */
 
   const sendAnswer = (overrideText) => {
+    setAiOptions([]); 
     if (adminMessages.length === 0) return;
     
     const currentMessage = adminMessages[currentIdx];
@@ -126,51 +129,90 @@ export default function Chatbot() {
       const nextMessage = adminMessages[nextIdx];
       setHistory((prev) => [...prev, { from: "bot", text: nextMessage.text }]);
       setCurrentIdx(nextIdx);
-    } else {
-      // סיימנו את כל השאלות
-      setDone(true);
-    }
+   } else {
+  // ✅ סיימנו שאלות Admin – עוברים ל-AI
+setUseAI(true);
+setDone(false);  // ✅ איפוס מצב סיום
+setHistory((prev) => [
+  ...prev,
+  { from: "bot", text: "תודה, עכשיו אמשיך איתך בשיחה חכמה כדי לדייק את פרטי המקרה." },
+]);
+}
+
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
+  if (e.key === "Enter") {
+    e.preventDefault();
+
+    if (!inputValue.trim()) return;   // ✅ חסימת הודעה ריקה
+
+    if (useAI) {
+      sendToAI(inputValue);
+    } else {
       sendAnswer();
     }
-  };
+  }
+};
 
   /* ───────────── בניית סיכום מסודר ───────────── */
 
-  const buildSummary = () => {
-    if (!caseData || adminMessages.length === 0) return "";
+const buildSummary = () => {
+  if (!caseData) return "";
 
-    const parts = [];
-    
-    // כותרת בסיסית
-    if (caseData.client_name) {
-      parts.push(`העובד/ת ${caseData.client_name}`);
-      
-      // אם יש תחום משפטי - מוסיפים אותו
-      if (caseData.legal_domain) {
-        const domainName = typeof caseData.legal_domain === 'object' 
-          ? caseData.legal_domain.name 
-          : 'תחום משפטי';
-        parts.push(`פונה בנושא: ${domainName}.`);
-      } else {
-        parts.push(`פונה בנושא משפטי.`);
-      }
+  const parts = [];
+
+  parts.push(`שם הלקוח: ${caseData.client_name}`);
+  parts.push(`טלפון: ${caseData.phone}`);
+  parts.push(`אימייל: ${caseData.email}`);
+
+  if (caseData.legal_domain) {
+    const domainName =
+      typeof caseData.legal_domain === "object"
+        ? caseData.legal_domain.name
+        : "תחום משפטי";
+    parts.push(`תחום משפטי: ${domainName}`);
+  }
+
+  parts.push("סיכום שיחה:");
+
+  history.forEach((msg) => {
+    if (msg.from === "user") {
+      parts.push(`לקוח: ${msg.text}`);
     }
+  });
 
-    // הוספת כל השאלות והתשובות
-    adminMessages.forEach((msg, idx) => {
-      const answer = answers[msg.id];
-      if (answer) {
-        parts.push(`${msg.text} ${answer}.`);
-      }
-    });
+  return parts.join("\n");
+};
 
-    return parts.join(" ");
-  };
+
+
+async function sendToAI(text) {
+  const newMessages = [
+    ...history.map(h => ({
+      role: h.from === "user" ? "user" : "assistant",
+      content: h.text
+    })),
+    { role: "user", content: text }
+  ];
+
+  setHistory(prev => [...prev, { from: "user", text }]);
+  setInputValue("");
+  setAiOptions([]);
+
+  const res = await fetch("http://127.0.0.1:8000/api/chatbot/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ messages: newMessages }),
+  });
+
+  const data = await res.json();
+
+  setHistory(prev => [...prev, { from: "bot", text: data.reply }]);
+  setAiOptions(data.options || []);
+
+}
+
 
   /* ───────────── שמירת הסיכום בשרת ───────────── */
 
@@ -247,9 +289,10 @@ export default function Chatbot() {
   }
 
   const currentMessage = adminMessages[currentIdx];
-  const progress = Math.round(
-    ((currentIdx + (done ? 1 : 0)) / adminMessages.length) * 100
-  );
+  const progress = useAI
+  ? (done ? 100 : 95)
+  : Math.round(((currentIdx + 1) / adminMessages.length) * 100);
+
 
   return (
     <>
@@ -323,7 +366,14 @@ export default function Chatbot() {
                     />
                     <button
                       type="button"
-                      onClick={() => sendAnswer()}
+                      onClick={() => {
+                        if (useAI) {
+                          sendToAI(inputValue);
+                        } else {
+                          sendAnswer();
+                        }
+                      }}
+
                       disabled={!inputValue.trim()}
                       className="send-btn"
                     >
@@ -332,6 +382,39 @@ export default function Chatbot() {
                       </span>
                     </button>
                   </div>
+
+                  {useAI && (
+  <div className="ai-options-container">
+
+    {/* כפתורי בחירה של ה-AI (אם יש) */}
+    {aiOptions.map((opt, i) => (
+      <button
+        key={i}
+        onClick={() => sendToAI(opt)}
+        className="send-btn"
+        style={{ margin: "5px", background: "#6366f1" }}
+      >
+        {opt}
+      </button>
+    ))}
+
+    {/* ✅ כפתור קבוע לסיום שיחה */}
+    <button
+      onClick={() => setDone(true)}
+      className="send-btn"
+      style={{
+        marginTop: "12px",
+        background: "#16a34a",
+        width: "100%",
+      }}
+    >
+      ✅ סיום שיחה ומעבר לקביעת פגישה
+    </button>
+
+  </div>
+)}
+
+
                 </>
               ) : (
                 <div className="finish-container">

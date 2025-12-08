@@ -8,6 +8,7 @@ from rest_framework import permissions
 from rest_framework.decorators import api_view
 from rest_framework import viewsets
 from django.core.mail import send_mail
+from .ai_service import ask_ai
 
 from .models import Case, CaseDocument, Appointment, LegalDomain
 from .serializers import (
@@ -441,3 +442,23 @@ class BotMessageViewSet(viewsets.ModelViewSet):
         if domain_id:
             qs = qs.filter(domain_id=domain_id)
         return qs
+
+
+class ChatbotAPIView(APIView):
+    def post(self, request):
+        messages = request.data.get("messages")
+
+        if not messages:
+            return Response(
+                {"detail": "messages is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            result = ask_ai(messages) 
+            return Response(result, status=200)
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=500
+            )
