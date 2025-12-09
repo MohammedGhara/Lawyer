@@ -321,7 +321,16 @@ export default function LawyerDashboard() {
                       <tr key={c.id} data-dashboard-animate>
                         <td>{idx + 1}</td>
                         <td>{c.client_name}</td>
-                        <td>{c.phone}</td>
+                        <td>
+  <a 
+    href={`https://wa.me/972${c.phone.replace(/^0/, "")}`}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="sl-whatsapp-link"
+  >
+    {c.phone}
+  </a>
+</td>
                         <td>{c.email}</td>
                         <td>
                           {c.legal_domain_name || describeClaimType(c.claim_type) || "—"}
