@@ -11,6 +11,8 @@ export default function LawyerDashboard() {
   const [draftTimes, setDraftTimes] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [whatsappConversations, setWhatsappConversations] = useState({}); // { caseId: [messages] }
+  const [selectedCaseForChat, setSelectedCaseForChat] = useState(null);
 
   const [filterClaim, setFilterClaim] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -46,11 +48,17 @@ export default function LawyerDashboard() {
       setError(null);
 
       const resCases = await fetch(`${API_BASE}/cases/list/`);
-      if (!resCases.ok) throw new Error("שגיאה בשליפת רשימת תיקים");
+      if (!resCases.ok) {
+        const errorText = await resCases.text();
+        throw new Error(`שגיאה בשליפת רשימת תיקים: ${resCases.status} - ${errorText}`);
+      }
       const casesData = await resCases.json();
 
       const resAppt = await fetch(`${API_BASE}/appointments/list/`);
-      if (!resAppt.ok) throw new Error("שגיאה בטעינת פגישות");
+      if (!resAppt.ok) {
+        const errorText = await resAppt.text();
+        throw new Error(`שגיאה בטעינת פגישות: ${resAppt.status} - ${errorText}`);
+      }
       const apptData = await resAppt.json();
 
       const apptByCase = {};
@@ -58,13 +66,56 @@ export default function LawyerDashboard() {
         apptByCase[appt.case] = appt;
       });
 
-      setCases(casesData);
+      setCases(casesData || []);
       setAppointments(apptByCase);
+      
+      // Load WhatsApp conversations for all cases (non-blocking, after main data loads)
+      if (casesData && casesData.length > 0) {
+        setTimeout(() => {
+          loadWhatsAppConversations(casesData);
+        }, 100);
+      }
     } catch (err) {
-      console.error(err);
-      setError(err.message);
+      console.error("Error loading data:", err);
+      setError(err.message || "שגיאה בטעינת הנתונים. ודא שהשרת Django פועל.");
     } finally {
       setLoading(false);
+    }
+  }
+  
+  async function loadWhatsAppConversations(casesData) {
+    if (!casesData || casesData.length === 0) return;
+    
+    const conversations = {};
+    for (const caseItem of casesData) {
+      try {
+        const res = await fetch(`${API_BASE}/cases/${caseItem.id}/whatsapp/`);
+        if (res.ok) {
+          const messages = await res.json();
+          if (messages && messages.length > 0) {
+            conversations[caseItem.id] = messages;
+          }
+        }
+      } catch (err) {
+        // Silently fail - WhatsApp messages are optional and API might not be ready
+        // Don't log errors to avoid console spam
+      }
+    }
+    setWhatsappConversations(prev => ({ ...prev, ...conversations }));
+  }
+  
+  async function loadWhatsAppMessages(caseId) {
+    try {
+      const res = await fetch(`${API_BASE}/cases/${caseId}/whatsapp/`);
+      if (res.ok) {
+        const messages = await res.json();
+        setWhatsappConversations(prev => ({
+          ...prev,
+          [caseId]: messages
+        }));
+      }
+    } catch (err) {
+      console.error(`Error loading WhatsApp messages:`, err);
     }
   }
 
@@ -213,18 +264,51 @@ export default function LawyerDashboard() {
         </h1>
 
         {loading && (
-          <div className="sl-loading" data-dashboard-animate>
+          <div className="sl-loading" data-dashboard-animate style={{ 
+            padding: "2rem", 
+            textAlign: "center", 
+            color: "#fff", 
+            fontSize: "1.2rem" 
+          }}>
             טוען נתונים...
+            <br />
+            <small style={{ fontSize: "0.9rem", opacity: 0.8 }}>
+              ממתין לתגובה מהשרת...
+            </small>
           </div>
         )}
 
         {error && (
-          <div className="sl-error" data-dashboard-animate>
-            שגיאה: {error}
+          <div className="sl-error" data-dashboard-animate style={{ 
+            padding: "2rem", 
+            textAlign: "center", 
+            background: "rgba(239, 68, 68, 0.2)",
+            border: "2px solid #ef4444",
+            borderRadius: "1rem",
+            color: "#fff", 
+            fontSize: "1.1rem",
+            margin: "2rem auto",
+            maxWidth: "600px"
+          }}>
+            <strong>שגיאה: {error}</strong>
+            <br />
+            <br />
+            <small style={{ fontSize: "0.9rem", opacity: 0.9 }}>
+              ודא שהשרת Django פועל על פורט 8000
+              <br />
+              הרץ: <code style={{ background: "rgba(0,0,0,0.3)", padding: "2px 6px", borderRadius: "4px" }}>cd server && python manage.py runserver</code>
+            </small>
           </div>
         )}
 
-        {!loading && !error && (
+        {!loading && !error && cases.length === 0 && (
+          <div style={{ textAlign: "center", padding: "3rem", color: "#fff" }}>
+            <h2>אין תיקים במערכת</h2>
+            <p>עדיין לא נוצרו תיקים במערכת</p>
+          </div>
+        )}
+
+        {!loading && !error && cases.length > 0 && (
           <>
             <div
               style={{
@@ -472,27 +556,49 @@ export default function LawyerDashboard() {
                               </div>
                             )}
                             {c.phone && (
-  <a
-    href={`https://wa.me/972${c.phone.replace(/^0/, "")}?text=${encodeURIComponent(
-      `שלום ${c.client_name}, עברתי על הסיכום שלך ואשמח לעזור לך.`
-    )}`}
-    target="_blank"
-    rel="noopener noreferrer"
-    className="sl-whatsapp-action-btn"
-    style={{
-      display: "inline-block",
-      marginTop: "8px",
-      padding: "6px 12px",
-      background: "#25d366",
-      color: "white",
-      borderRadius: "6px",
-      fontSize: "14px",
-      textDecoration: "none",
-    }}
-  >
-    💬 פניה ללקוח בוואטסאפ
-  </a>
-)}
+                              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "8px" }}>
+                                <a
+                                  href={`https://wa.me/972${c.phone.replace(/^0/, "")}?text=${encodeURIComponent(
+                                    `שלום ${c.client_name}, עברתי על הסיכום שלך ואשמח לעזור לך.`
+                                  )}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="sl-whatsapp-action-btn"
+                                  style={{
+                                    display: "inline-block",
+                                    padding: "6px 12px",
+                                    background: "#25d366",
+                                    color: "white",
+                                    borderRadius: "6px",
+                                    fontSize: "14px",
+                                    textDecoration: "none",
+                                  }}
+                                >
+                                  💬 פניה ללקוח בוואטסאפ
+                                </a>
+                                <button
+                                  onClick={() => {
+                                    setSelectedCaseForChat(c.id);
+                                    loadWhatsAppMessages(c.id);
+                                  }}
+                                  style={{
+                                    padding: "6px 12px",
+                                    background: whatsappConversations[c.id] && whatsappConversations[c.id].length > 0 ? "#3b82f6" : "#6b7280",
+                                    color: "white",
+                                    border: "none",
+                                    borderRadius: "6px",
+                                    fontSize: "14px",
+                                    cursor: "pointer",
+                                    opacity: whatsappConversations[c.id] && whatsappConversations[c.id].length > 0 ? 1 : 0.7,
+                                  }}
+                                  title={whatsappConversations[c.id] && whatsappConversations[c.id].length > 0 
+                                    ? `צפה ב-${whatsappConversations[c.id].length} הודעות שמורות` 
+                                    : "אין הודעות שמורות עדיין"}
+                                >
+                                  💬 שיחה {whatsappConversations[c.id] && whatsappConversations[c.id].length > 0 ? `(${whatsappConversations[c.id].length})` : "(0)"}
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </td>
 
@@ -584,6 +690,126 @@ export default function LawyerDashboard() {
           </>
         )}
       </div>
+
+      {/* WhatsApp Conversation Modal */}
+      {selectedCaseForChat && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.8)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10000,
+            padding: "2rem",
+          }}
+          onClick={() => setSelectedCaseForChat(null)}
+        >
+          <div
+            style={{
+              background: "linear-gradient(145deg, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.92))",
+              borderRadius: "2rem",
+              padding: "2rem",
+              maxWidth: "600px",
+              width: "100%",
+              maxHeight: "80vh",
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
+              boxShadow: "0 35px 90px rgba(15, 23, 42, 0.9)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+              <h2 style={{ color: "#ffffff", fontSize: "1.5rem", fontWeight: 700 }}>
+                💬 שיחת WhatsApp
+              </h2>
+              <button
+                onClick={() => setSelectedCaseForChat(null)}
+                style={{
+                  background: "#ef4444",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: "36px",
+                  height: "36px",
+                  cursor: "pointer",
+                  fontSize: "1.2rem",
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div
+              style={{
+                flex: 1,
+                overflowY: "auto",
+                padding: "1rem",
+                background: "rgba(15, 23, 42, 0.5)",
+                borderRadius: "1rem",
+                marginBottom: "1rem",
+                maxHeight: "60vh",
+              }}
+            >
+              {whatsappConversations[selectedCaseForChat] && whatsappConversations[selectedCaseForChat].length > 0 ? (
+                whatsappConversations[selectedCaseForChat].map((msg, idx) => (
+                  <div
+                    key={msg.id || idx}
+                    style={{
+                      marginBottom: "1rem",
+                      display: "flex",
+                      justifyContent: msg.is_from_lawyer ? "flex-end" : "flex-start",
+                    }}
+                  >
+                    <div
+                      style={{
+                        maxWidth: "75%",
+                        padding: "0.75rem 1rem",
+                        borderRadius: "1rem",
+                        background: msg.is_from_lawyer
+                          ? "linear-gradient(135deg, #2563eb, #3b82f6)"
+                          : "rgba(30, 64, 175, 0.4)",
+                        color: "#ffffff",
+                        fontSize: "0.95rem",
+                        lineHeight: "1.6",
+                      }}
+                    >
+                      <div style={{ marginBottom: "0.25rem", fontSize: "0.75rem", opacity: 0.8 }}>
+                        {msg.is_from_lawyer ? "עורך דין" : "לקוח"} • {new Date(msg.timestamp).toLocaleString("he-IL")}
+                      </div>
+                      <div>{msg.message_text}</div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div style={{ textAlign: "center", color: "#9ca3af", padding: "2rem" }}>
+                  אין הודעות שמורות עדיין. השיחה תישמר אוטומטית לאחר הפעלת שירות WhatsApp.
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={() => {
+                loadWhatsAppMessages(selectedCaseForChat);
+              }}
+              style={{
+                padding: "0.75rem 1.5rem",
+                background: "linear-gradient(135deg, #2563eb, #22c55e)",
+                color: "white",
+                border: "none",
+                borderRadius: "999px",
+                fontSize: "1rem",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              🔄 רענון שיחה
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

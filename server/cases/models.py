@@ -150,3 +150,45 @@ class BotMessage(models.Model):
 
     def __str__(self):
         return f"{self.domain.name} – {self.title or self.text[:30]}"
+
+
+class WhatsAppMessage(models.Model):
+    """
+    שמירת הודעות WhatsApp בין עורך הדין ללקוח.
+    """
+    case = models.ForeignKey(
+        Case,
+        on_delete=models.CASCADE,
+        related_name='whatsapp_messages',
+        help_text="התיק הקשור לשיחה"
+    )
+    
+    # פרטי ההודעה
+    message_id = models.CharField(max_length=255, unique=True, help_text="ID ייחודי של ההודעה מ-WhatsApp")
+    from_number = models.CharField(max_length=30, help_text="מספר השולח")
+    to_number = models.CharField(max_length=30, help_text="מספר הנמען")
+    message_text = models.TextField(help_text="תוכן ההודעה")
+    is_from_lawyer = models.BooleanField(default=False, help_text="האם ההודעה נשלחה מעורך הדין")
+    timestamp = models.DateTimeField(help_text="זמן שליחת ההודעה")
+    
+    # מטא-דאטה
+    message_type = models.CharField(
+        max_length=20,
+        default='text',
+        help_text="סוג ההודעה (text, image, document, etc.)"
+    )
+    has_media = models.BooleanField(default=False)
+    media_url = models.URLField(blank=True, null=True, help_text="קישור למדיה אם יש")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-timestamp', '-created_at']
+        indexes = [
+            models.Index(fields=['case', '-timestamp']),
+            models.Index(fields=['from_number', '-timestamp']),
+        ]
+    
+    def __str__(self):
+        direction = "←" if self.is_from_lawyer else "→"
+        return f"{direction} {self.case.client_name} - {self.message_text[:50]}"

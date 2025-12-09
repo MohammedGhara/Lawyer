@@ -1,8 +1,19 @@
 {
+  "name": "lawyer-whatsapp-service",
+  "version": "1.0.0",
+  "description": "WhatsApp integration service for lawyer case management",
+  "main": "whatsapp_service.js",
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
-    "mongoose": "^9.0.0"
+    "mongoose": "^9.0.0",
+    "whatsapp-web.js": "^1.23.0",
+    "qrcode-terminal": "^0.12.0",
+    "axios": "^1.6.0",
+    "puppeteer": "^21.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
   }
 }
