@@ -471,6 +471,28 @@ export default function LawyerDashboard() {
                                 <span>אין סיכום שנשמר</span>
                               </div>
                             )}
+                            {c.phone && (
+  <a
+    href={`https://wa.me/972${c.phone.replace(/^0/, "")}?text=${encodeURIComponent(
+      `שלום ${c.client_name}, עברתי על הסיכום שלך ואשמח לעזור לך.`
+    )}`}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="sl-whatsapp-action-btn"
+    style={{
+      display: "inline-block",
+      marginTop: "8px",
+      padding: "6px 12px",
+      background: "#25d366",
+      color: "white",
+      borderRadius: "6px",
+      fontSize: "14px",
+      textDecoration: "none",
+    }}
+  >
+    💬 פניה ללקוח בוואטסאפ
+  </a>
+)}
                           </div>
                         </td>
 
@@ -485,12 +507,31 @@ export default function LawyerDashboard() {
                                 <b>מבוקש:</b>{" "}
                                 {formatDateTime(appt.requested_datetime)}
                               </div>
-                              {appt.approved_datetime && (
-                                <div className="sl-appointment-info">
-                                  <b>מועד שנקבע:</b>{" "}
-                                  {formatDateTime(appt.approved_datetime)}
-                                </div>
-                              )}
+                              {appt.approved_datetime && c.phone && (
+                                <a
+                                  href={`https://wa.me/972${c.phone.replace(/^0/, "")}?text=${encodeURIComponent(
+                                    `שלום ${c.client_name}, הפגישה שלך אושרה! נתראה בתאריך: ${formatDateTime(
+                                      appt.approved_datetime
+                                    )}.`
+                                  )}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="sl-whatsapp-action-btn"
+                                  style={{
+                                    display: "inline-block",
+                                    marginTop: "6px",
+                                    padding: "6px 12px",
+                                    background: "#25d366",
+                                    color: "white",
+                                    borderRadius: "6px",
+                                    fontSize: "14px",
+                                    textDecoration: "none",
+                                  }}
+                                >
+                                  🟢 שלח אישור בוואטסאפ
+                                </a>
+                            )}
+
                               <div className="sl-appointment-info">
                                 <b>סטטוס:</b> {translateStatus(appt.status)}
                               </div>
