@@ -9,6 +9,8 @@ const API_BASE = "http://127.0.0.1:8000/api";
 export default function Chatbot() {
   const { caseId } = useParams();
   const navigate = useNavigate();
+  const [isTyping, setIsTyping] = useState(false);
+const messagesEndRef = React.useRef(null);
 
   const [caseData, setCaseData] = useState(null);
   const [adminMessages, setAdminMessages] = useState([]); // הודעות/שאלות מהמנהל
@@ -72,9 +74,8 @@ const [useAI, setUseAI] = useState(false);
         }
 
         // 4. אם אין הודעות מהמנהל – הצג שגיאה
-        if (scriptMessages.length === 0) {
-          setError("לא נמצאו הודעות או שאלות עבור התחום הזה. אנא צור קשר עם המנהל.");
-          return;
+       if (scriptMessages.length === 0) {
+          setError(" לא נמצאו הודעות או שאלות עבור התחום הזה כי אנחנו עדיין לא עובדים בתחום שמבוקש. אנא צור קשר עם עורך הדין או עם המנהל לבירור.");          return;
         }
 
         // 5. שמירת ההודעות והצגת הראשונה
@@ -188,6 +189,14 @@ const buildSummary = () => {
 
 
 async function sendToAI(text) {
+  // Add user's message
+  setHistory(prev => [...prev, { from: "user", text }]);
+  setInputValue("");
+  setAiOptions([]);
+
+  // Show typing indicator
+  setIsTyping(true);
+
   const newMessages = [
     ...history.map(h => ({
       role: h.from === "user" ? "user" : "assistant",
@@ -196,23 +205,22 @@ async function sendToAI(text) {
     { role: "user", content: text }
   ];
 
-  setHistory(prev => [...prev, { from: "user", text }]);
-  setInputValue("");
-  setAiOptions([]);
-
+  // Call backend
   const res = await fetch("http://127.0.0.1:8000/api/chatbot/", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages: newMessages }),
+    body: JSON.stringify({ messages: newMessages })
   });
 
   const data = await res.json();
 
+  // Remove typing indicator
+  setIsTyping(false);
+
+  // Add final AI reply
   setHistory(prev => [...prev, { from: "bot", text: data.reply }]);
   setAiOptions(data.options || []);
-
 }
-
 
   /* ───────────── שמירת הסיכום בשרת ───────────── */
 
@@ -337,19 +345,35 @@ async function sendToAI(text) {
 
             {/* כרטיס הצ'אט */}
             <div className="chat-card">
-              <div id="chat-messages" className="chat-messages">
-                {history.map((msg, idx) => (
-                  <div
-                    key={idx}
-                    className={`message-wrapper ${msg.from}`}
-                    style={{ animationDelay: `${idx * 0.1}s` }}
-                  >
-                    <div className={`message-bubble ${msg.from}`}>
-                      {msg.text}
-                    </div>
+                <div id="chat-messages" className="chat-messages">
+
+              {history.map((msg, idx) => (
+                <div
+                  key={idx}
+                  className={`message-wrapper ${msg.from}`}
+                  style={{ animationDelay: `${idx * 0.1}s` }}
+                >
+                  <div className={`message-bubble ${msg.from}`}>
+                    {msg.text}
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
+
+              {/* --- AI typing indicator --- */}
+              {isTyping && (
+                <div className="message-wrapper bot">
+                  <div className="message-bubble bot typing-bubble">
+                    <span className="dot"></span>
+                    <span className="dot"></span>
+                    <span className="dot"></span>
+                  </div>
+                </div>
+              )}
+
+              <div ref={messagesEndRef} />
+
+            </div>
+
 
               {!done ? (
                 <>
