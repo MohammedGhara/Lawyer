@@ -1064,3 +1064,14 @@
           }
         }
       
+
+        .sl-whatsapp-link {
+  color: #25d366;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.sl-whatsapp-link:hover {
+  text-decoration: underline;
+  color: #1ebe5b;
+}

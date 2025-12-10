@@ -6,5 +6,9 @@ class CasesConfig(AppConfig):
   name = "cases"
 
   def ready(self):
-      # import signals so Django registers them
       import cases.signals
+      try:
+          from .scheduler import start_scheduler
+          start_scheduler()
+      except Exception as e:
+          print("[CasesConfig.ready] Failed to start scheduler:", e)

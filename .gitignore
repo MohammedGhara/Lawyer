@@ -1,0 +1,24 @@
+# WhatsApp Web.js authentication data
+whatsapp/.wwebjs_auth/
+.wwebjs_auth/
+
+# Environment variables
+.env
+server/.env
+
+# Node
+node_modules/
+npm-debug.log*
+package-lock.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+db.sqlite3
+

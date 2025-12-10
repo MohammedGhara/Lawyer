@@ -20,6 +20,8 @@ from .views import (
     lawyer_login,
     LegalDomainViewSet,
     BotMessageViewSet,
+    WhatsAppMessageListCreateAPIView,
+    CaseWhatsAppMessagesAPIView,
 )
 
 router = DefaultRouter()
@@ -51,4 +53,8 @@ urlpatterns = [
 
     # ----- תחומים + מאגרי ידע -----
     path("", include(router.urls)),   # זה מוסיף /api/domains/ וכו'
+    
+    # ----- WhatsApp Messages -----
+    path('whatsapp/messages/', WhatsAppMessageListCreateAPIView.as_view(), name='whatsapp-messages'),
+    path('cases/<int:case_id>/whatsapp/', CaseWhatsAppMessagesAPIView.as_view(), name='case-whatsapp-messages'),
 ]

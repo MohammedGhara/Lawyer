@@ -9,13 +9,15 @@ from rest_framework.decorators import api_view
 from rest_framework import viewsets
 from django.core.mail import send_mail
 from .ai_service import ask_ai
+from django.utils.timezone import localtime
 
-from .models import Case, CaseDocument, Appointment, LegalDomain
+from .models import Case, CaseDocument, Appointment, LegalDomain, WhatsAppMessage
 from .serializers import (
     CaseSerializer,
     CaseDocumentSerializer,
     AppointmentSerializer,
     LegalDomainSerializer,
+    WhatsAppMessageSerializer,
 )
 
 # -------------------------------------------------------
@@ -298,7 +300,9 @@ class AppointmentApproveAPIView(APIView):
         appt.status = "approved"
         appt.save()
 
-        # ✅ שליחת אימייל מקצועי
+        local_dt = localtime(appt.approved_datetime)
+        date_str = local_dt.strftime("%d/%m/%Y %H:%M")
+
         send_mail(
             "אישור פגישה – משרד עורכי דין",
             f"""לכבוד הלקוח/ה,
@@ -307,8 +311,7 @@ class AppointmentApproveAPIView(APIView):
 אושרה על ידי עורך הדין.
 
 פרטי הפגישה:
-תאריך ושעה: {appt.approved_datetime}
-
+תאריך ושעה: {date_str}
 במידה ויש צורך בעדכון נוסף או בשאלה כלשהי,
 נשמח לעמוד לרשותך.
 
@@ -387,8 +390,8 @@ class AppointmentSuggestAPIView(APIView):
         appt.status = "suggested"
         appt.approved_datetime = dt
         appt.save()
-
-        # ✅ שליחת אימייל מקצועי
+        local_dt = localtime(dt)
+        date_str = local_dt.strftime("%d/%m/%Y %H:%M")
         send_mail(
             "הצעת מועד חדש לפגישה – משרד עורכי דין",
             f"""לכבוד הלקוח/ה,
@@ -396,8 +399,7 @@ class AppointmentSuggestAPIView(APIView):
 בהמשך לבקשתך לקביעת פגישה, עורך הדין הציע מועד חדש לפגישה.
 
 פרטי המועד המוצע:
-תאריך ושעה: {dt}
-
+תאריך ושעה: {date_str}
 אנא התחבר/י למערכת על מנת לאשר או לדחות את המועד.
 
 בברכה,
@@ -461,4 +463,92 @@ class ChatbotAPIView(APIView):
             return Response(
                 {"detail": str(e)},
                 status=500
+            )
+
+
+# -------------------------------------------------------
+# 🔵 WhatsApp Messages
+# -------------------------------------------------------
+
+class WhatsAppMessageListCreateAPIView(APIView):
+    """
+    POST /api/whatsapp/messages/ - Save a WhatsApp message (called by Node.js service)
+    GET  /api/whatsapp/messages/?case_id=<id> - Get messages for a case
+    """
+    permission_classes = [permissions.AllowAny]  # Node.js service needs access
+    
+    def post(self, request):
+        """Save a WhatsApp message from the Node.js service"""
+        try:
+            case_id = request.data.get('case_id')
+            if not case_id:
+                return Response(
+                    {"detail": "case_id is required"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            case = get_object_or_404(Case, pk=case_id)
+            
+            # Check if message already exists (prevent duplicates)
+            message_id = request.data.get('message_id')
+            if message_id:
+                existing = WhatsAppMessage.objects.filter(message_id=message_id).first()
+                if existing:
+                    return Response(
+                        WhatsAppMessageSerializer(existing).data,
+                        status=status.HTTP_200_OK
+                    )
+            
+            serializer = WhatsAppMessageSerializer(data=request.data)
+            if serializer.is_valid():
+                # Save with case (view sets it, not from request data)
+                serializer.save(case=case)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            # Return detailed validation errors
+            return Response(
+                {"detail": "Validation error", "errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    def get(self, request):
+        """Get WhatsApp messages for a case"""
+        case_id = request.query_params.get('case_id')
+        if not case_id:
+            return Response(
+                {"detail": "case_id query parameter is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            case = get_object_or_404(Case, pk=case_id)
+            messages = WhatsAppMessage.objects.filter(case=case).order_by('timestamp', 'created_at')
+            serializer = WhatsAppMessageSerializer(messages, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class CaseWhatsAppMessagesAPIView(APIView):
+    """
+    GET /api/cases/<case_id>/whatsapp/ - Get all WhatsApp messages for a case
+    """
+    def get(self, request, case_id):
+        try:
+            case = get_object_or_404(Case, pk=case_id)
+            messages = WhatsAppMessage.objects.filter(case=case).order_by('timestamp', 'created_at')
+            serializer = WhatsAppMessageSerializer(messages, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Case, CaseDocument, Appointment, LegalDomain
+from .models import Case, CaseDocument, Appointment, LegalDomain, WhatsAppMessage
 
 
 class CaseDocumentSerializer(serializers.ModelSerializer):
@@ -91,3 +91,28 @@ class BotMessageSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+class WhatsAppMessageSerializer(serializers.ModelSerializer):
+    case_client_name = serializers.CharField(source='case.client_name', read_only=True)
+    
+    class Meta:
+        model = WhatsAppMessage
+        fields = [
+            'id',
+            'case',
+            'case_client_name',
+            'message_id',
+            'from_number',
+            'to_number',
+            'message_text',
+            'is_from_lawyer',
+            'timestamp',
+            'message_type',
+            'has_media',
+            'media_url',
+            'created_at',
+        ]
+        read_only_fields = ['id', 'created_at']
+        extra_kwargs = {
+            'case': {'required': False}  # Case will be set by the view
+        }
