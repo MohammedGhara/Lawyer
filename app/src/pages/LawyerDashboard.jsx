@@ -207,7 +207,7 @@ export default function LawyerDashboard() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          suggested_datetime: new Date(dt).toISOString(),
+          suggested_datetime: dt
         }),
       });
       await loadAllData();

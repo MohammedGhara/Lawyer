@@ -9,6 +9,7 @@ from rest_framework.decorators import api_view
 from rest_framework import viewsets
 from django.core.mail import send_mail
 from .ai_service import ask_ai
+from django.utils.timezone import localtime
 
 from .models import Case, CaseDocument, Appointment, LegalDomain, WhatsAppMessage
 from .serializers import (
@@ -299,7 +300,9 @@ class AppointmentApproveAPIView(APIView):
         appt.status = "approved"
         appt.save()
 
-        # ✅ שליחת אימייל מקצועי
+        local_dt = localtime(appt.approved_datetime)
+        date_str = local_dt.strftime("%d/%m/%Y %H:%M")
+
         send_mail(
             "אישור פגישה – משרד עורכי דין",
             f"""לכבוד הלקוח/ה,
@@ -308,8 +311,7 @@ class AppointmentApproveAPIView(APIView):
 אושרה על ידי עורך הדין.
 
 פרטי הפגישה:
-תאריך ושעה: {appt.approved_datetime}
-
+תאריך ושעה: {date_str}
 במידה ויש צורך בעדכון נוסף או בשאלה כלשהי,
 נשמח לעמוד לרשותך.
 
@@ -388,8 +390,8 @@ class AppointmentSuggestAPIView(APIView):
         appt.status = "suggested"
         appt.approved_datetime = dt
         appt.save()
-
-        # ✅ שליחת אימייל מקצועי
+        local_dt = localtime(dt)
+        date_str = local_dt.strftime("%d/%m/%Y %H:%M")
         send_mail(
             "הצעת מועד חדש לפגישה – משרד עורכי דין",
             f"""לכבוד הלקוח/ה,
@@ -397,8 +399,7 @@ class AppointmentSuggestAPIView(APIView):
 בהמשך לבקשתך לקביעת פגישה, עורך הדין הציע מועד חדש לפגישה.
 
 פרטי המועד המוצע:
-תאריך ושעה: {dt}
-
+תאריך ושעה: {date_str}
 אנא התחבר/י למערכת על מנת לאשר או לדחות את המועד.
 
 בברכה,
